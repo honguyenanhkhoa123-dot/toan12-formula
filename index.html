@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+  <title>Sổ Tay & Luyện Nhớ Công Thức Toán 12 | Ôn Thi THPT Quốc Gia</title>
+  
+  <!-- SEO & Social Meta -->
+  <meta name="description" content="Hệ thống sổ tay và luyện nhớ full công thức Toán 12 ôn thi tốt nghiệp THPT Quốc Gia. Tối ưu di động, thẻ Flashcard 3D, trắc nghiệm ghi nhớ, tra cứu nhanh.">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Toán 12 Pro">
+
+  <!-- Google Fonts: Be Vietnam Pro & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- KaTeX for Beautiful Math Formula Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="dark">
+  <!-- Audio Context Elements (Synthesized via Web Audio API, no external mp3 needed) -->
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-area">
+        <div class="logo-badge">📐 12+</div>
+        <div class="logo-text">
+          <h1>TOÁN 12 PRO</h1>
+          <span class="sub-title">Sổ tay & Luyện nhớ công thức</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Progress Mini Badge -->
+        <div class="progress-pill" id="globalProgressPill" title="Tiến độ học thuộc">
+          <span class="progress-icon">🎯</span>
+          <span class="progress-text" id="globalProgressText">0%</span>
+        </div>
+
+        <!-- Sound Toggle -->
+        <button class="icon-btn" id="soundToggleBtn" aria-label="Bật/Tắt âm thanh hiệu ứng" title="Âm thanh hiệu ứng">
+          <span class="sound-icon">🔊</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button class="icon-btn" id="themeToggleBtn" aria-label="Chuyển chế độ sáng/tối" title="Sáng/Tối">
+          <span class="theme-icon">🌙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sticky Search & Filter Bar -->
+  <div class="search-filter-wrapper">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Tìm công thức (vd: đạo hàm, cực trị, logarit, simson...)" autocomplete="off" spellcheck="false">
+      <button class="clear-btn" id="clearSearchBtn" aria-label="Xóa tìm kiếm" style="display: none;">✕</button>
+    </div>
+
+    <!-- Chapter Chips Horizontal Scroll -->
+    <div class="chips-scroll-container" id="chapterChips">
+      <!-- Generated via JavaScript -->
+    </div>
+
+    <!-- Quick Status Filter -->
+    <div class="status-filter-bar">
+      <button class="status-btn active" data-filter="all">Tất cả (<span id="countAll">0</span>)</button>
+      <button class="status-btn" data-filter="unmemorized">⏳ Chưa thuộc (<span id="countUnmemorized">0</span>)</button>
+      <button class="status-btn" data-filter="memorized">✅ Đã thuộc (<span id="countMemorized">0</span>)</button>
+      <button class="status-btn" data-filter="bookmarked">⭐ Yêu thích (<span id="countBookmarked">0</span>)</button>
+    </div>
+  </div>
+
+  <!-- Main Viewports Container -->
+  <main class="main-content">
+    
+    <!-- ==============================================
+         TAB 1: SỔ TAY TRA CỨU (HANDBOOK / CHEAT SHEET)
+         ============================================== -->
+    <section class="tab-pane active" id="paneHandbook" role="tabpanel">
+      <!-- Progress Bar Banner -->
+      <div class="hero-banner">
+        <div class="hero-info">
+          <h2>Bí Kíp Công Thức Toán 12</h2>
+          <p>Thuộc lòng toàn bộ công thức cốt lõi & công thức tính nhanh thi THPT QG.</p>
+        </div>
+        <div class="hero-stat-card">
+          <div class="stat-circle">
+            <svg viewBox="0 0 36 36" class="circular-chart">
+              <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="circle" id="circleProgress" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <text x="18" y="20.35" class="percentage" id="percentText">0%</text>
+            </svg>
+          </div>
+          <div class="stat-label">
+            <strong id="statCountText">0 / 0</strong>
+            <span>Đã ghi nhớ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formula Cards List Grid -->
+      <div class="formula-grid" id="formulaList">
+        <!-- Rendered via JavaScript -->
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="emptyState" style="display: none;">
+        <div class="empty-icon">🔎</div>
+        <h3>Không tìm thấy công thức nào</h3>
+        <p>Hãy thử tìm bằng từ khóa khác hoặc bấm "Tất cả" để xem toàn bộ.</p>
+        <button class="primary-btn" id="resetFilterBtn">Xem tất cả công thức</button>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB 2: THẺ FLASHCARD HỌC THUỘC (SPACED REPETITION)
+         ============================================== -->
+    <section class="tab-pane" id="paneFlashcard" role="tabpanel">
+      <div class="flashcard-section">
+        <div class="flashcard-header">
+          <div class="fc-counter">Thẻ <strong id="fcCurrentIndex">1</strong> / <span id="fcTotalCount">0</span></div>
+          <div class="fc-filter-select">
+            <select id="fcChapterSelect" aria-label="Chọn chương Flashcard">
+              <option value="all">Tất cả các chương</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Progress Bar for Flashcards -->
+        <div class="fc-progress-bar">
+          <div class="fc-progress-fill" id="fcProgressFill" style="width: 0%;"></div>
+        </div>
+
+        <!-- 3D Flip Card Container -->
+        <div class="flashcard-container" id="flashcardElement" tabindex="0" role="button" aria-label="Lật thẻ ghi nhớ">
+          <div class="flashcard-inner" id="flashcardInner">
+            <!-- Front Face: Question / Name -->
+            <div class="flashcard-face flashcard-front">
+              <div class="card-top-tag" id="fcFrontChapter">Chương 1</div>
+              <div class="card-prompt">
+                <span class="prompt-badge">ĐỀ BÀI / CÂU HỎI</span>
+                <h3 id="fcFrontTitle">Tiêu đề công thức</h3>
+                <p id="fcFrontDesc">Mô tả câu hỏi...</p>
+              </div>
+              <div class="card-hint">
+                <span class="tap-hint">👆 Chạm hoặc ấn phím Space để xem công thức</span>
+              </div>
+            </div>
+
+            <!-- Back Face: Formula Answer & Mnemonics -->
+            <div class="flashcard-face flashcard-back">
+              <div class="card-top-tag" id="fcBackChapter">Chương 1</div>
+              <div class="card-answer">
+                <span class="answer-badge">CÔNG THỨC CHUẨN</span>
+                <div class="math-display-large" id="fcBackMath">
+                  <!-- LaTeX rendered here -->
+                </div>
+                <div class="card-mnemonic-box" id="fcBackMnemonic">
+                  <!-- Mẹo nhớ -->
+                </div>
+              </div>
+              <div class="card-hint">
+                <span class="tap-hint">👆 Chạm để lật lại mặt trước</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flashcard Controls -->
+        <div class="fc-controls">
+          <button class="fc-nav-btn" id="fcPrevBtn" aria-label="Thẻ trước">⬅️</button>
+          <button class="fc-action-btn fc-btn-fail" id="fcFailBtn">
+            <span>❌</span> Chưa nhớ
+          </button>
+          <button class="fc-action-btn fc-btn-pass" id="fcPassBtn">
+            <span>✅</span> Đã thuộc!
+          </button>
+          <button class="fc-nav-btn" id="fcNextBtn" aria-label="Thẻ sau">➡️</button>
+        </div>
+
+        <div class="fc-keyboard-tip">
+          💡 <strong>Mẹo di động:</strong> Vuốt sang trái/phải để chuyển thẻ. Chạm vào thẻ để lật xem đáp án.
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB 3: LUYỆN TRÍ NHỚ (QUIZ TRẮC NGHIỆM)
+         ============================================== -->
+    <section class="tab-pane" id="paneQuiz" role="tabpanel">
+      <div class="quiz-container">
+        <!-- Quiz Header & Streak -->
+        <div class="quiz-top-bar">
+          <div class="streak-badge" id="quizStreakBadge">
+            🔥 Chuỗi đúng: <strong id="quizStreakCount">0</strong>
+          </div>
+          <div class="score-badge">
+            Điểm: <strong id="quizScoreCount">0</strong>
+          </div>
+        </div>
+
+        <!-- Quiz Card -->
+        <div class="quiz-card" id="quizCard">
+          <div class="quiz-meta">
+            <span class="quiz-chapter-tag" id="quizChapterTag">Khảo sát hàm số</span>
+            <span class="quiz-index" id="quizIndexText">Câu 1</span>
+          </div>
+
+          <h3 class="quiz-question" id="quizQuestionText">Nội dung câu hỏi đang tải...</h3>
+
+          <div class="quiz-options" id="quizOptionsContainer">
+            <!-- Rendered via JS -->
+          </div>
+
+          <!-- Explanation Box -->
+          <div class="quiz-explain-box" id="quizExplainBox" style="display: none;">
+            <div class="explain-title" id="explainTitle">💡 Giải thích chi tiết:</div>
+            <div class="explain-content" id="explainContent"></div>
+            <button class="primary-btn next-quiz-btn" id="quizNextBtn">Câu tiếp theo ➔</button>
+          </div>
+        </div>
+
+        <!-- Quiz Restart -->
+        <div class="quiz-footer">
+          <button class="secondary-btn" id="quizRestartBtn">🔄 Làm lại bài trắc nghiệm mới</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB 4: HƯỚNG DẪN UP GITHUB & TIẾN ĐỘ
+         ============================================== -->
+    <section class="tab-pane" id="paneDeploy" role="tabpanel">
+      <div class="guide-container">
+        <div class="guide-card">
+          <div class="guide-header">
+            <span class="guide-icon">🚀</span>
+            <h3>Hướng Dẫn Đưa Lên GitHub Pages (1 Click Có Link Chạy Mọi Máy)</h3>
+          </div>
+          <p class="guide-intro">
+            Dự án này được thiết kế theo dạng <strong>Static Web App thuần</strong> (100% không cần cài đặt Node.js hay Build server phức tạp). Bạn chỉ cần up thư mục này lên GitHub là sẽ có ngay một đường link chạy vĩnh viễn trên bất kỳ điện thoại hay máy tính nào!
+          </p>
+
+          <div class="guide-steps">
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <h4>Tạo Repository mới trên GitHub</h4>
+                <p>Truy cập <a href="https://github.com/new" target="_blank" rel="noopener">github.com/new</a>, đặt tên repository (ví dụ: <code>toan12-formula</code>), chọn <strong>Public</strong>.</p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <h4>Đẩy mã nguồn lên GitHub</h4>
+                <p>Mở PowerShell tại thư mục này và chạy các lệnh:</p>
+                <div class="code-block-box">
+                  <code>git init<br>git add .<br>git commit -m "Full Cong Thuc Toan 12 App"<br>git branch -M main<br>git remote add origin https://github.com/TEN_CUA_BAN/toan12-formula.git<br>git push -u origin main</code>
+                  <button class="copy-code-btn" id="copyGitCmdBtn">Sao chép lệnh</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <h4>Kích hoạt GitHub Pages</h4>
+                <p>Vào <strong>Settings</strong> của repo trên GitHub ➔ Chọn mục <strong>Pages</strong> (menu bên trái) ➔ Tại phần <strong>Branch</strong>, chọn <code>main</code> và bấm <strong>Save</strong>.</p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <h4>Nhận link chia sẻ cho cả lớp!</h4>
+                <p>Sau 1 phút, GitHub sẽ cấp cho bạn một đường link dạng:</p>
+                <div class="link-preview-box">
+                  <code>https://TEN_CUA_BAN.github.io/toan12-formula/</code>
+                </div>
+                <p class="tip-text">🎉 Bất kỳ ai mở link này trên điện thoại (iPhone/Android) hay máy tính đều xem mượt mà, lưu tiến độ học tập riêng của từng bạn!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Local Data Management Card -->
+        <div class="guide-card">
+          <div class="guide-header">
+            <span class="guide-icon">💾</span>
+            <h3>Quản lý dữ liệu học tập cá nhân</h3>
+          </div>
+          <p>Dữ liệu công thức đã thuộc và yêu thích được lưu tự động trên trình duyệt điện thoại của bạn.</p>
+          <div class="data-actions-row">
+            <button class="secondary-btn" id="exportDataBtn">📥 Xuất dữ liệu học tập</button>
+            <button class="danger-btn" id="resetAllDataBtn">🗑️ Xóa tiến độ làm lại từ đầu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Mobile Bottom Navigation Bar (Ergonomic App Navigation) -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" data-tab="paneHandbook">
+      <span class="nav-icon">📖</span>
+      <span class="nav-label">Tra Cứu</span>
+    </button>
+    <button class="nav-item" data-tab="paneFlashcard">
+      <span class="nav-icon">🎴</span>
+      <span class="nav-label">Flashcard</span>
+    </button>
+    <button class="nav-item" data-tab="paneQuiz">
+      <span class="nav-icon">🧠</span>
+      <span class="nav-label">Luyện Nhớ</span>
+    </button>
+    <button class="nav-item" data-tab="paneDeploy">
+      <span class="nav-icon">🚀</span>
+      <span class="nav-label">Up Link</span>
+    </button>
+  </nav>
+
+  <!-- Toast Notification Container -->
+  <div class="toast" id="toastBox">Thông báo!</div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
