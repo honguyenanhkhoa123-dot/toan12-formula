@@ -12,10 +12,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Toán 12 Pro">
 
-  <!-- Google Fonts: Be Vietnam Pro & Outfit -->
+  <!-- Google Fonts: Be Vietnam Pro, Outfit, Space Grotesk & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
   <!-- KaTeX for Beautiful Math Formula Rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
@@ -26,16 +26,23 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body data-theme="dark">
-  <!-- Audio Context Elements (Synthesized via Web Audio API, no external mp3 needed) -->
+  <!-- Ambient Cyber Background Grid & Glow -->
+  <div class="cyber-ambient-bg" aria-hidden="true"></div>
 
-  <!-- App Header -->
+  <!-- App Header (Sci-Fi Cyber HUD Header) -->
   <header class="app-header">
     <div class="header-container">
       <div class="logo-area">
-        <div class="logo-badge">📐 12+</div>
+        <div class="logo-badge">
+          <span class="badge-icon">⚡</span>
+          <span class="badge-text">12+</span>
+        </div>
         <div class="logo-text">
-          <h1>TOÁN 12 PRO</h1>
-          <span class="sub-title">Sổ tay & Luyện nhớ công thức</span>
+          <div class="logo-title-row">
+            <h1>TOÁN 12 PRO</h1>
+            <span class="hud-status-chip"><span class="status-blink"></span>HUD v2.5</span>
+          </div>
+          <span class="sub-title">Quantum Formula Matrix • Ôn Thi 9+ THPT QG</span>
         </div>
       </div>
 
@@ -63,8 +70,9 @@
   <div class="search-filter-wrapper">
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Tìm công thức (vd: đạo hàm, cực trị, logarit, simson...)" autocomplete="off" spellcheck="false">
+      <input type="text" id="searchInput" placeholder="Truy vấn ma trận công thức (đạo hàm, tiệm cận, Oxyz, logarit, Simson...)" autocomplete="off" spellcheck="false">
       <button class="clear-btn" id="clearSearchBtn" aria-label="Xóa tìm kiếm" style="display: none;">✕</button>
+      <span class="search-shortcut" title="Phím tắt">PRO</span>
     </div>
 
     <!-- Chapter Chips Horizontal Scroll -->
@@ -74,10 +82,10 @@
 
     <!-- Quick Status Filter -->
     <div class="status-filter-bar">
-      <button class="status-btn active" data-filter="all">Tất cả (<span id="countAll">0</span>)</button>
-      <button class="status-btn" data-filter="unmemorized">⏳ Chưa thuộc (<span id="countUnmemorized">0</span>)</button>
-      <button class="status-btn" data-filter="memorized">✅ Đã thuộc (<span id="countMemorized">0</span>)</button>
-      <button class="status-btn" data-filter="bookmarked">⭐ Yêu thích (<span id="countBookmarked">0</span>)</button>
+      <button class="status-btn active" data-filter="all"><span class="dot-indicator"></span> Tất cả (<span id="countAll">0</span>)</button>
+      <button class="status-btn" data-filter="unmemorized"><span class="dot-indicator unmemorized"></span> ⏳ Chưa thuộc (<span id="countUnmemorized">0</span>)</button>
+      <button class="status-btn" data-filter="memorized"><span class="dot-indicator memorized"></span> ✅ Đã thuộc (<span id="countMemorized">0</span>)</button>
+      <button class="status-btn" data-filter="bookmarked"><span class="dot-indicator bookmarked"></span> ⭐ Yêu thích (<span id="countBookmarked">0</span>)</button>
     </div>
   </div>
 
@@ -88,23 +96,100 @@
          TAB 1: SỔ TAY TRA CỨU (HANDBOOK / CHEAT SHEET)
          ============================================== -->
     <section class="tab-pane active" id="paneHandbook" role="tabpanel">
-      <!-- Progress Bar Banner -->
-      <div class="hero-banner">
-        <div class="hero-info">
-          <h2>Bí Kíp Công Thức Toán 12</h2>
-          <p>Thuộc lòng toàn bộ công thức cốt lõi & công thức tính nhanh thi THPT QG.</p>
-        </div>
-        <div class="hero-stat-card">
-          <div class="stat-circle">
-            <svg viewBox="0 0 36 36" class="circular-chart">
-              <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <path class="circle" id="circleProgress" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <text x="18" y="20.35" class="percentage" id="percentText">0%</text>
-            </svg>
+      <!-- CYBER HUD MATH HERO BANNER -->
+      <div class="cyber-hero-banner">
+        <!-- Floating Math Particles Canvas -->
+        <canvas id="mathMatrixCanvas" class="hero-canvas"></canvas>
+        <div class="cyber-grid-overlay" aria-hidden="true"></div>
+        <div class="cyber-radial-glow" aria-hidden="true"></div>
+
+        <div class="cyber-banner-content">
+          <!-- Top Cyber Status Bar -->
+          <div class="cyber-status-row">
+            <span class="cyber-tag-pulse">
+              <span class="pulse-dot"></span> MA TRẬN TOÁN 12 PRO • SYSTEM ONLINE
+            </span>
+            <span class="cyber-tag-target">
+              🎯 MỤC TIÊU: ĐẠI PHÁ 9+ THPT QUỐC GIA
+            </span>
           </div>
-          <div class="stat-label">
-            <strong id="statCountText">0 / 0</strong>
-            <span>Đã ghi nhớ</span>
+
+          <!-- Main Hero Layout: Left Content & Right 3D Visual Hologram -->
+          <div class="cyber-hero-main">
+            <div class="cyber-hero-info">
+              <h2 class="cyber-glitch-title">
+                TRẠM GIA TỐC CÔNG THỨC TOÁN 12
+              </h2>
+              <p class="cyber-subtitle">
+                Giải mã toàn bộ hệ thống Giải Tích & Hình Học Không Gian với trực quan hóa KaTeX 3D, thẻ Flashcard phản xạ thần tốc và bộ câu hỏi trắc nghiệm thực chiến.
+              </p>
+
+              <!-- Quick Cyber Stats Row -->
+              <div class="cyber-metrics-grid">
+                <div class="metric-card">
+                  <div class="metric-top">
+                    <span class="metric-label">CÔNG THỨC CỐT LÕI</span>
+                    <span class="metric-icon">📐</span>
+                  </div>
+                  <div class="metric-value" id="hudTotalFormulas">39+</div>
+                  <div class="metric-bar"><div class="bar-fill" style="width: 100%;"></div></div>
+                </div>
+
+                <div class="metric-card">
+                  <div class="metric-top">
+                    <span class="metric-label">TỈ LỆ THÔNG THẠO</span>
+                    <span class="metric-icon">⚡</span>
+                  </div>
+                  <div class="metric-value highlight" id="hudMemorizedRatio">0%</div>
+                  <div class="metric-bar"><div class="bar-fill cyan" id="hudProgressBar" style="width: 0%;"></div></div>
+                </div>
+
+                <div class="metric-card">
+                  <div class="metric-top">
+                    <span class="metric-label">CẤP CHIẾN BINH</span>
+                    <span class="metric-icon">🏆</span>
+                  </div>
+                  <div class="metric-value gold" id="hudMasteryRank">TẬP SỰ</div>
+                  <div class="metric-bar"><div class="bar-fill gold" id="hudRankBar" style="width: 10%;"></div></div>
+                </div>
+              </div>
+
+              <!-- Quick Hero Action Buttons -->
+              <div class="cyber-hero-actions">
+                <button class="cyber-btn primary" id="heroStartPracticeBtn">
+                  <span class="btn-icon">⚡</span> BẮT ĐẦU LUYỆN PHẢN XẠ
+                </button>
+                <button class="cyber-btn secondary" id="heroFilterKeyBtn">
+                  <span class="btn-icon">💎</span> CÔNG THỨC TÍNH NHANH 9+
+                </button>
+              </div>
+
+              <!-- Hidden backwards compatibility elements for safe querySelectors -->
+              <div style="display: none;" aria-hidden="true">
+                <span id="statCountText">0 / 0</span>
+                <span id="percentText">0%</span>
+                <svg><path id="circleProgress"></path></svg>
+              </div>
+            </div>
+
+            <!-- Right 3D Holographic Display Card -->
+            <div class="cyber-hologram-card">
+              <div class="holo-frame">
+                <div class="holo-corner top-left"></div>
+                <div class="holo-corner top-right"></div>
+                <div class="holo-corner bottom-left"></div>
+                <div class="holo-corner bottom-right"></div>
+                <img src="assets/cyber_math_hero.jpg" alt="3D Cyber Math Hologram Oxyz" class="holo-image" loading="lazy">
+                <div class="holo-scanline"></div>
+                <div class="holo-overlay-info">
+                  <div class="holo-data-badge">
+                    <span class="holo-dot"></span>
+                    <span>HOLOGRAM Oxyz • $\vec{u} \times \vec{v}$</span>
+                  </div>
+                  <span class="holo-tech-code">SYS://MATH.12.PRO</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

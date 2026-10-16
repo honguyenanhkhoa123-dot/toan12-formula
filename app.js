@@ -461,21 +461,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const percent = Math.round((memorized / (total || 1)) * 100);
 
     // Update filter badges
-    document.getElementById('countAll').textContent = total;
-    document.getElementById('countMemorized').textContent = memorized;
-    document.getElementById('countUnmemorized').textContent = unmemorized;
-    document.getElementById('countBookmarked').textContent = bookmarked;
+    const countAllEl = document.getElementById('countAll');
+    if (countAllEl) countAllEl.textContent = total;
+    const countMemorizedEl = document.getElementById('countMemorized');
+    if (countMemorizedEl) countMemorizedEl.textContent = memorized;
+    const countUnmemorizedEl = document.getElementById('countUnmemorized');
+    if (countUnmemorizedEl) countUnmemorizedEl.textContent = unmemorized;
+    const countBookmarkedEl = document.getElementById('countBookmarked');
+    if (countBookmarkedEl) countBookmarkedEl.textContent = bookmarked;
 
     // Update header progress pill
-    document.getElementById('globalProgressText').textContent = `${percent}%`;
+    const globalProgressText = document.getElementById('globalProgressText');
+    if (globalProgressText) globalProgressText.textContent = `${percent}%`;
 
-    // Update Hero Chart
-    document.getElementById('statCountText').textContent = `${memorized} / ${total}`;
-    document.getElementById('percentText').textContent = `${percent}%`;
-    const circle = document.getElementById('circleProgress');
-    if (circle) {
-      circle.setAttribute('stroke-dasharray', `${percent}, 100`);
+    // Update Cyber HUD Hero Metrics
+    const hudTotalFormulas = document.getElementById('hudTotalFormulas');
+    if (hudTotalFormulas) hudTotalFormulas.textContent = `${total}+`;
+
+    const hudMemorizedRatio = document.getElementById('hudMemorizedRatio');
+    if (hudMemorizedRatio) hudMemorizedRatio.textContent = `${percent}%`;
+
+    const hudProgressBar = document.getElementById('hudProgressBar');
+    if (hudProgressBar) hudProgressBar.style.width = `${percent}%`;
+
+    // Dynamic Mastery Rank
+    const hudMasteryRank = document.getElementById('hudMasteryRank');
+    const hudRankBar = document.getElementById('hudRankBar');
+    let rankTitle = 'TẬP SỰ';
+    let rankWidth = '15%';
+
+    if (percent === 100) {
+      rankTitle = 'THẦN TOÁN 10';
+      rankWidth = '100%';
+    } else if (percent >= 80) {
+      rankTitle = 'ĐẠI SƯ 9+';
+      rankWidth = `${percent}%`;
+    } else if (percent >= 50) {
+      rankTitle = 'CAO THỦ 8+';
+      rankWidth = `${percent}%`;
+    } else if (percent >= 20) {
+      rankTitle = 'CHIẾN BINH 7+';
+      rankWidth = `${percent}%`;
+    } else if (percent > 0) {
+      rankTitle = 'TÂN BINH';
+      rankWidth = '25%';
     }
+
+    if (hudMasteryRank) hudMasteryRank.textContent = rankTitle;
+    if (hudRankBar) hudRankBar.style.width = rankWidth;
+
+    // Backwards compatibility for old chart
+    const statCountText = document.getElementById('statCountText');
+    if (statCountText) statCountText.textContent = `${memorized} / ${total}`;
+    const percentText = document.getElementById('percentText');
+    if (percentText) percentText.textContent = `${percent}%`;
+    const circle = document.getElementById('circleProgress');
+    if (circle) circle.setAttribute('stroke-dasharray', `${percent}, 100`);
   }
 
   // ==========================================
@@ -818,9 +859,102 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // 11. INITIAL BOOTSTRAP
+  // 11. CYBER MATRIX CANVAS & HERO INTERACTIONS
+  // ==========================================
+  const heroStartPracticeBtn = document.getElementById('heroStartPracticeBtn');
+  if (heroStartPracticeBtn) {
+    heroStartPracticeBtn.addEventListener('click', () => {
+      playSound('click');
+      switchTab('paneFlashcard');
+    });
+  }
+
+  const heroFilterKeyBtn = document.getElementById('heroFilterKeyBtn');
+  if (heroFilterKeyBtn) {
+    heroFilterKeyBtn.addEventListener('click', () => {
+      playSound('click');
+      state.searchQuery = 'cực trị';
+      searchInput.value = 'cực trị';
+      clearSearchBtn.style.display = 'block';
+      renderHandbookList();
+      showToast('⚡ Đã lọc ma trận công thức trọng tâm 9+');
+    });
+  }
+
+  function initCyberMathCanvas() {
+    const canvas = document.getElementById('mathMatrixCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = 0;
+    let height = 0;
+    let particles = [];
+    const glyphs = [
+      '∫', '∑', 'lim', 'π', 'Δ', '∇', '∞', "f'(x)", 'dx', 'λ', 'θ', '√x',
+      'e^{iπ}', 'Oxyz', 'd(M,(P))', 'V=Bh/3', 'u⃗ × v⃗', 'log_a(b)', 'sin²x'
+    ];
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      width = canvas.width = rect.width || canvas.offsetWidth || 800;
+      height = canvas.height = rect.height || canvas.offsetHeight || 300;
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    class MathParticle {
+      constructor() {
+        this.reset(true);
+      }
+      reset(init = false) {
+        this.x = Math.random() * (width || 800);
+        this.y = init ? Math.random() * (height || 300) : (height || 300) + 15;
+        this.glyph = glyphs[Math.floor(Math.random() * glyphs.length)];
+        this.size = Math.random() * 10 + 11; // 11px to 21px
+        this.speedY = Math.random() * 0.4 + 0.15;
+        this.speedX = (Math.random() - 0.5) * 0.25;
+        this.alpha = Math.random() * 0.35 + 0.12;
+        this.color = Math.random() > 0.4 ? 'rgba(0, 242, 254, ' : 'rgba(168, 85, 247, ';
+      }
+      update() {
+        this.y -= this.speedY;
+        this.x += this.speedX;
+        if (this.y < -25 || this.x < -25 || this.x > width + 25) {
+          this.reset(false);
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.font = `600 ${this.size}px "Outfit", "Space Grotesk", sans-serif`;
+        ctx.fillStyle = this.color + this.alpha + ')';
+        ctx.shadowColor = 'rgba(0, 242, 254, 0.4)';
+        ctx.shadowBlur = 6;
+        ctx.fillText(this.glyph, this.x, this.y);
+        ctx.restore();
+      }
+    }
+
+    const count = Math.min(Math.floor((width || 800) / 28), 35);
+    particles = Array.from({ length: count }, () => new MathParticle());
+
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+      }
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+  }
+
+  // ==========================================
+  // 12. INITIAL BOOTSTRAP
   // ==========================================
   renderChapterChips();
   renderHandbookList();
   renderAllMath();
+  initCyberMathCanvas();
 });
