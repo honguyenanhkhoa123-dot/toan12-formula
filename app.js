@@ -200,6 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
       pane.classList.toggle('active', pane.id === targetTabId);
     });
 
+    // Toggle reels body mode for clean immersive mobile feed
+    document.body.classList.toggle('in-reels-mode', targetTabId === 'paneReels');
+
     // Only show search filter bar in Handbook tab
     if (searchFilterWrapper) {
       searchFilterWrapper.style.display = (targetTabId === 'paneHandbook') ? 'flex' : 'none';
@@ -1010,6 +1013,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function initReelsFeed() {
     if (!reelsFeed) return;
 
+    const streakCountEl = document.getElementById('reelsStreakCount');
+    if (streakCountEl) {
+      streakCountEl.textContent = state.quizStreak || 1;
+    }
+
     // Populate Chapter Filter dropdown if not done
     if (reelsChapterSelect && reelsChapterSelect.options.length <= 1) {
       CHAPTERS.forEach(c => {
@@ -1179,20 +1187,20 @@ document.addEventListener('DOMContentLoaded', () => {
       card.dataset.id = item.id;
 
       if (item.type === 'trap') {
-        // TRAP CARD TEMPLATE
+        // TRAP CARD TEMPLATE (Clean, High-Yield)
         card.innerHTML = `
-          <div>
+          <div class="reel-main-body">
             <div class="death-trap-header">
               <span>⚠️</span>
-              <span>CẢNH BÁO BẪY 9+ THPTQG</span>
+              <span>BẪY PHỔ BIẾN THPTQG</span>
             </div>
             <div class="reel-badge-row">
               <span class="reel-chapter-tag">${item.chapterName}</span>
-              <span class="reel-tier-tag boss">💀 95% SAI</span>
+              <span class="reel-tier-tag boss">DỄ SAI</span>
             </div>
-            <h3 class="reel-title">${item.title}</h3>
+            <h3 class="reel-title">${item.title.replace(/^💀\s*/, '')}</h3>
             
-            <div class="reel-formula-card neon-glow">
+            <div class="reel-formula-card">
               <div class="reel-katex-render">$$${item.latex}$$</div>
             </div>
 
@@ -1200,11 +1208,10 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="trap-wrong">${item.wrong}</div>
               <div class="trap-right">${item.right}</div>
             </div>
-          </div>
 
-          <div class="reel-trick-box">
-            <div class="reel-trick-title">🛡️ CÁCH NÉ BẪY:</div>
-            <div>${item.mnemonic}</div>
+            <div class="reel-trick-box" style="margin-top: 10px;">
+              <div>${item.mnemonic ? item.mnemonic.replace(/^💡\s*(Mẹo nhớ\s*:?\s*)?/i, '💡 ') : ''}</div>
+            </div>
           </div>
 
           ${renderRightActions(item)}
@@ -1212,8 +1219,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (item.type === 'reflex') {
         // 5-SECOND REFLEX CHALLENGE CARD TEMPLATE
         card.innerHTML = `
-          <div>
-            <div class="reflex-header-bar">
+          <div class="reel-main-body">
+            <div class="reflex-header-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span class="reel-chapter-tag">${item.chapterName}</span>
               <span class="reflex-countdown-badge" id="countdown-${item.id}">⏱️ 5s</span>
             </div>
@@ -1222,42 +1229,45 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="reflex-timer-progress" id="timerBar-${item.id}" style="width: 100%;"></div>
             </div>
 
-            <h3 class="reel-title" style="color: var(--neon-cyan);">⚡ THỬ THÁCH CHỚP NHOÁNG</h3>
+            <h3 class="reel-title" style="color: #38bdf8; font-size: 1.15rem; margin-bottom: 10px;">⚡ Thử Thách Phản Xạ 5s</h3>
             <div class="reflex-question-text">${item.question}</div>
 
             <div class="reflex-options-grid">
               <button class="reflex-btn" data-choice="A" data-correct="${item.correctChoice}">A: ${item.optA}</button>
               <button class="reflex-btn" data-choice="B" data-correct="${item.correctChoice}">B: ${item.optB}</button>
             </div>
-          </div>
 
-          <div class="reel-trick-box" style="border-left-color: #a855f7;">
-            <div class="reel-trick-title" style="color: #a855f7;">🎯 LUẬT CHƠI:</div>
-            <div>Bấm đúng trong 5 giây để nhận +50 Dopamine và x2 Combo Streak!</div>
+            <div class="reel-trick-box" style="border-left-color: #a855f7; margin-top: 8px; font-size: 0.78rem;">
+              <span>Chọn đáp án nhanh trước khi hết giờ để tăng chuỗi streak!</span>
+            </div>
           </div>
 
           ${renderRightActions(item)}
         `;
       } else {
         // STANDARD FORMULA OR CASIO CARD
+        const cleanMnemonic = item.mnemonic ? item.mnemonic.replace(/^💡\s*(Mẹo nhớ\s*:?\s*)?/i, '💡 ') : '';
+        const tipText = cleanMnemonic || item.desc || '';
+
         card.innerHTML = `
-          <div>
+          <div class="reel-main-body">
             <div class="reel-badge-row">
               <span class="reel-chapter-tag">${item.chapterName}</span>
               <span class="reel-tier-tag ${item.tier}">
-                ${item.type === 'casio' ? '🕹️ CASIO 5S' : (item.tier === 'boss' ? '💀 9+ BOSS' : '⚡ TRỌNG TÂM')}
+                ${item.type === 'casio' ? 'CASIO NHANH' : (item.tier === 'boss' ? 'VẬN DỤNG CAO' : 'TRỌNG TÂM')}
               </span>
             </div>
             <h3 class="reel-title">${item.title}</h3>
 
-            <div class="reel-formula-card neon-glow">
+            <div class="reel-formula-card">
               <div class="reel-katex-render">$$${item.latex}$$</div>
             </div>
-          </div>
 
-          <div class="reel-trick-box">
-            <div class="reel-trick-title">💡 MẸO NHỚ THẦN TỐC:</div>
-            <div>${item.mnemonic || item.desc || 'Học thuộc công thức để ăn điểm trắc nghiệm!'}</div>
+            ${tipText ? `
+            <div class="reel-trick-box">
+              <div>${tipText}</div>
+            </div>
+            ` : ''}
           </div>
 
           ${renderRightActions(item)}
@@ -1422,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', () => {
         countEl.textContent = formatNumber(cur + 1);
       }
       addDopamine(15);
-      showToast('❤️ Đã lưu công thức vào mục Yêu thích!');
+      showToast('❤️ Đã lưu công thức!');
     }
   }
 
@@ -1443,10 +1453,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function triggerFeverMode() {
     reelsState.isFever = true;
     playSound('success');
-    if (dopamineMultiplier) dopamineMultiplier.textContent = 'x2.0 🔥';
+    if (dopamineMultiplier) dopamineMultiplier.textContent = 'x2.0';
     if (feverModeBanner) feverModeBanner.classList.add('active');
-
-    showToast('🔥 BÙNG NỔ FEVER MODE 30S: X2 XP VÀ LƯỢT THẢ TIM!');
 
     clearTimeout(reelsState.feverTimeout);
     reelsState.feverTimeout = setTimeout(() => {
@@ -1473,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (timeLeft <= 0) {
         clearInterval(reelsState.reflexTimers[cardId]);
-        if (countdownEl) countdownEl.textContent = 'HẾT GIỜ! 💥';
+        if (countdownEl) countdownEl.textContent = 'HẾT GIỜ!';
       }
     }, 100);
   }

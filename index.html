@@ -29,31 +29,23 @@
   <!-- Ambient Cyber Background Grid & Glow -->
   <div class="cyber-ambient-bg" aria-hidden="true"></div>
 
-  <!-- App Header (Sci-Fi Cyber HUD Header) -->
+  <!-- App Header (Modern Sleek Header) -->
   <header class="app-header">
     <div class="header-container">
       <div class="logo-area">
         <div class="logo-badge">
-          <span class="badge-icon">⚡</span>
-          <span class="badge-text">12+</span>
+          <span class="badge-icon">📐</span>
         </div>
         <div class="logo-text">
           <div class="logo-title-row">
-            <h1>TOÁN 12 PRO</h1>
-            <span class="hud-status-chip"><span class="status-blink"></span>HUD v2.5</span>
+            <h1>TOÁN 12</h1>
+            <span class="pro-tag">PRO</span>
           </div>
-          <span class="sub-title">Quantum Formula Matrix • Ôn Thi 9+ THPT QG</span>
+          <span class="sub-title">Sổ tay & Luyện nhớ công thức THPTQG</span>
         </div>
       </div>
 
       <div class="header-actions">
-        <!-- Math Reels Hot Shortcut Button -->
-        <button class="reels-header-btn" id="headerReelsBtn" title="Lướt Math Reels gây nghiện chuẩn Gen Z">
-          <span class="reels-fire-anim">🔥</span>
-          <span class="reels-header-text">REELS 9+</span>
-          <span class="reels-pulse-dot"></span>
-        </button>
-
         <!-- Progress Mini Badge -->
         <div class="progress-pill" id="globalProgressPill" title="Tiến độ học thuộc">
           <span class="progress-icon">🎯</span>
@@ -405,42 +397,29 @@
     <!-- ==============================================
          TAB 5: MATH REELS (TIKTOK / DOOMSCROLL FEED)
          ============================================== -->
+    <!-- ==============================================
+         TAB 5: MATH REELS (TIKTOK / DOOMSCROLL FEED)
+         ============================================== -->
     <section class="tab-pane" id="paneReels" role="tabpanel">
       <div class="reels-stage-wrapper">
         
-        <!-- Top Overlay: Dopamine Meter & Chapter Switcher -->
+        <!-- Clean Minimal Top Header Overlay -->
         <div class="reels-hud-header">
-          <div class="dopamine-meter-box" id="dopamineMeterBox" title="Lướt liên tục để kích hoạt FEVER MODE x2 XP!">
-            <div class="dopamine-title-row">
-              <span class="flame-icon-fire">🔥</span>
-              <span class="dopamine-label">DOPAMINE FEED</span>
-              <span class="dopamine-multiplier" id="dopamineMultiplier">x1.0</span>
-            </div>
-            <div class="dopamine-track-bar">
-              <div class="dopamine-fill-glow" id="dopamineFillBar" style="width: 20%;"></div>
-            </div>
-          </div>
-
-          <div class="reels-chapter-pill-box">
-            <select id="reelsChapterSelect" class="reels-chapter-dropdown">
-              <option value="all">⚡ Tất cả chuyên đề</option>
+          <div class="reels-topic-pill">
+            <select id="reelsChapterSelect" class="reels-chapter-dropdown" aria-label="Lọc chuyên đề">
+              <option value="all">Tất cả chuyên đề ▾</option>
             </select>
           </div>
-        </div>
 
-        <!-- Fever Mode Banner Overlay -->
-        <div class="fever-mode-banner" id="feverModeBanner">
-          <span class="fever-text">⚡ FEVER MODE ACTIVE • X2 EXP & LỬA NEON! 🔥</span>
+          <div class="reels-streak-badge" id="reelsStreakBadge" title="Chuỗi ngày ôn luyện">
+            <span>🔥</span>
+            <span id="reelsStreakCount">1</span>
+          </div>
         </div>
 
         <!-- Vertical Snap Scroll Reel Container -->
         <div class="reels-feed" id="reelsFeed">
           <!-- Dynamically populated Reel cards -->
-        </div>
-
-        <!-- Micro-hint guide for first time -->
-        <div class="reels-scroll-guide">
-          <span>👆 Vuốt lên/xuống • Chạm 2 lần thả tim ❤️</span>
         </div>
 
       </div>
