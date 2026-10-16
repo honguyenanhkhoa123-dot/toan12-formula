@@ -579,15 +579,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Populate Front
     fcFrontChapter.textContent = item.chapterName;
-    fcFrontTitle.textContent = item.title;
-    fcFrontDesc.textContent = item.desc;
+    fcFrontTitle.innerHTML = item.title;
+    fcFrontDesc.innerHTML = item.desc;
 
     // Populate Back
     fcBackChapter.textContent = item.chapterName;
     fcBackMath.innerHTML = `$$${item.latex}$$`;
     fcBackMnemonic.innerHTML = item.mnemonic ? `<strong>${item.mnemonic}</strong>` : '💡 Cố gắng luyện tập nhớ các hệ số!';
 
-    renderAllMath(fcBackMath);
+    renderAllMath(flashcardElement);
   }
 
   let isSwiping = false;
@@ -787,7 +787,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Show Explanation
-    explainContent.innerHTML = explanation.includes('$') ? explanation : (explanation.includes('\\') ? `$${explanation}$` : explanation);
+    explainContent.innerHTML = explanation;
     quizExplainBox.style.display = 'block';
     renderAllMath(quizExplainBox);
   }
