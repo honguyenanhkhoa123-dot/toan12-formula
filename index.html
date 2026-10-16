@@ -47,6 +47,13 @@
       </div>
 
       <div class="header-actions">
+        <!-- Math Reels Hot Shortcut Button -->
+        <button class="reels-header-btn" id="headerReelsBtn" title="Lướt Math Reels gây nghiện chuẩn Gen Z">
+          <span class="reels-fire-anim">🔥</span>
+          <span class="reels-header-text">REELS 9+</span>
+          <span class="reels-pulse-dot"></span>
+        </button>
+
         <!-- Progress Mini Badge -->
         <div class="progress-pill" id="globalProgressPill" title="Tiến độ học thuộc">
           <span class="progress-icon">🎯</span>
@@ -395,13 +402,102 @@
       </div>
     </section>
 
+    <!-- ==============================================
+         TAB 5: MATH REELS (TIKTOK / DOOMSCROLL FEED)
+         ============================================== -->
+    <section class="tab-pane" id="paneReels" role="tabpanel">
+      <div class="reels-stage-wrapper">
+        
+        <!-- Top Overlay: Dopamine Meter & Chapter Switcher -->
+        <div class="reels-hud-header">
+          <div class="dopamine-meter-box" id="dopamineMeterBox" title="Lướt liên tục để kích hoạt FEVER MODE x2 XP!">
+            <div class="dopamine-title-row">
+              <span class="flame-icon-fire">🔥</span>
+              <span class="dopamine-label">DOPAMINE FEED</span>
+              <span class="dopamine-multiplier" id="dopamineMultiplier">x1.0</span>
+            </div>
+            <div class="dopamine-track-bar">
+              <div class="dopamine-fill-glow" id="dopamineFillBar" style="width: 20%;"></div>
+            </div>
+          </div>
+
+          <div class="reels-chapter-pill-box">
+            <select id="reelsChapterSelect" class="reels-chapter-dropdown">
+              <option value="all">⚡ Tất cả chuyên đề</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fever Mode Banner Overlay -->
+        <div class="fever-mode-banner" id="feverModeBanner">
+          <span class="fever-text">⚡ FEVER MODE ACTIVE • X2 EXP & LỬA NEON! 🔥</span>
+        </div>
+
+        <!-- Vertical Snap Scroll Reel Container -->
+        <div class="reels-feed" id="reelsFeed">
+          <!-- Dynamically populated Reel cards -->
+        </div>
+
+        <!-- Micro-hint guide for first time -->
+        <div class="reels-scroll-guide">
+          <span>👆 Vuốt lên/xuống • Chạm 2 lần thả tim ❤️</span>
+        </div>
+
+      </div>
+    </section>
+
   </main>
+
+  <!-- Reels Comment Drawer (Bottom Sheet) -->
+  <div class="reels-comment-drawer" id="reelsCommentDrawer">
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <div class="drawer-panel">
+      <div class="drawer-pull-bar"></div>
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <span class="drawer-badge">💬 2k7 CHÉM GIÓ</span>
+          <h4 id="drawerFormulaName">Đạo hàm hàm số</h4>
+        </div>
+        <button class="drawer-close-btn" id="drawerCloseBtn" aria-label="Đóng bình luận">✕</button>
+      </div>
+
+      <div class="drawer-comments-stream" id="drawerCommentsStream">
+        <!-- Rendered comments -->
+      </div>
+
+      <form class="drawer-input-bar" id="commentSubmitForm">
+        <input type="text" id="commentInputField" placeholder="Viết bí kíp hoặc cảm nghĩ của bạn..." maxlength="120" autocomplete="off">
+        <button type="submit" class="comment-send-btn" id="commentSendBtn">Gửi</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Flex Story Modal (Instagram / Facebook 9:16 Card) -->
+  <div class="story-export-modal" id="storyExportModal">
+    <div class="modal-backdrop" id="storyBackdrop"></div>
+    <div class="story-modal-box">
+      <button class="story-close-btn" id="storyCloseBtn">✕</button>
+      <div class="story-card-canvas-container" id="storyCardContainer">
+        <!-- Story preview rendered here -->
+      </div>
+      <div class="story-actions-footer">
+        <button class="primary-btn story-save-btn" id="storySaveBtn">
+          <span>📸</span> Tải Ảnh Đăng Story
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Mobile Bottom Navigation Bar (Ergonomic App Navigation) -->
   <nav class="bottom-nav" id="bottomNav">
     <button class="nav-item active" data-tab="paneHandbook">
       <span class="nav-icon">📖</span>
       <span class="nav-label">Tra Cứu</span>
+    </button>
+    <button class="nav-item reels-nav-btn" data-tab="paneReels">
+      <span class="nav-icon flame-pulsing">⚡</span>
+      <span class="nav-label">Math Reels</span>
+      <span class="nav-hot-pill">HOT</span>
     </button>
     <button class="nav-item" data-tab="paneFlashcard">
       <span class="nav-icon">🎴</span>
