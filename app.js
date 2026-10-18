@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const ICON = {
     bookmark:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 20.5 12 16.2l-6.5 4.3V5.5A2 2 0 0 1 7.5 3.5h9a2 2 0 0 1 2 2z"/></svg>',
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.4s-7.7-4.7-7.7-9.8a4.4 4.4 0 0 1 7.7-3 4.4 4.4 0 0 1 7.7 3c0 5.1-7.7 9.8-7.7 9.8z"/></svg>',
     comment:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.8c0 4-3.8 7.2-8.5 7.2a10 10 0 0 1-2.6-.3L4.6 21l1.2-3.6a6.9 6.9 0 0 1-2.3-4.9c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2z"/></svg>',
     image:
@@ -1102,7 +1102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `
       <div class="reel-rail">
         <button class="rail-btn js-save${saved ? ' is-active' : ''}" type="button" data-id="${item.id}"
-                aria-pressed="${saved}" aria-label="Lưu công thức">
+                aria-pressed="${saved}" aria-label="Thích và lưu công thức">
           <span class="rail-btn__circle">${ICON.bookmark}</span>
           <span class="rail-count" data-count="${item.id}">${formatNumber(item.likes)}</span>
         </button>

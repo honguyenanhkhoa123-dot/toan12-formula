@@ -18,7 +18,7 @@
   --border-strong: rgba(255, 255, 255, 0.15);
 
   /* Chữ */
-  --text:    #E9EEF7;
+  --text:    #F1F5F9;
   --text-2:  #94A3B8;
   --text-3:  #64748B;
 
@@ -26,10 +26,10 @@
   --primary:   #38BDF8;
   --primary-2: #6366F1;
   --primary-soft: rgba(56, 189, 248, 0.14);
-  --success:   #34D399;
-  --success-soft: rgba(52, 211, 153, 0.13);
-  --danger:    #F43F5E;
-  --danger-soft: rgba(244, 63, 94, 0.13);
+  --success:   #22C55E;
+  --success-soft: rgba(34, 197, 94, 0.14);
+  --danger:    #EF4444;
+  --danger-soft: rgba(239, 68, 68, 0.14);
   --warn:      #FBBF24;
 
   /* Bo góc */
@@ -103,6 +103,23 @@ ol, ul { padding: 0; list-style: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; cursor: pointer; }
 img, svg { display: block; max-width: 100%; }
+
+/* Chuẩn chạm trên mobile (E3):
+   – touch-action: manipulation bỏ delay 300ms khi tap
+   – không cho bôi đen nhầm trên các nút chrome
+   – vẫn cho phép chọn/copy nội dung toán để học sinh ghi chép */
+button, select, a,
+.nav-item, .chip, .filter-chip, .icon-btn, .rail-btn, .switch, .option-btn, .btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.math-render, .katex, .math-block, .formula-box, .reel-desc, .callout p,
+.quiz-question, .option-text, .sheet__stream, .answer-btn {
+  -webkit-user-select: text;
+  user-select: text;
+}
 
 body {
   font-family: var(--font);
@@ -210,8 +227,8 @@ body[data-theme="light"] .ambient-glow { opacity: 0.32; }
   align-items: center;
   gap: 9px;
   min-width: 0;
-  padding: 4px;
-  margin: -4px;
+  padding: 5px;
+  margin: -5px;
   border-radius: var(--r-md);
 }
 .brand__mark {
@@ -231,6 +248,8 @@ body[data-theme="light"] .ambient-glow { opacity: 0.32; }
   font-weight: 800;
   line-height: 1.15;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   letter-spacing: -0.02em;
 }
 .brand__name em {
@@ -281,6 +300,12 @@ body[data-theme="light"] .ambient-glow { opacity: 0.32; }
   position: relative;
   display: inline-flex;
   align-items: center;
+}
+/* Vùng chạm ≥44px cho dropdown (cao thị giác 34px) */
+.pill-select::after {
+  content: '';
+  position: absolute;
+  inset: -5px 0;
 }
 .pill-select select {
   appearance: none;
@@ -393,7 +418,7 @@ body:not([data-tab="paneReels"]) .pill-select { display: none; }
 .btn svg { width: 17px; height: 17px; flex: none; }
 .btn:active { transform: scale(0.97); }
 .btn--block { width: 100%; }
-.btn--sm { min-height: 38px; padding: 0 14px; font-size: 0.8rem; }
+.btn--sm { min-height: 40px; padding: 0 14px; font-size: 0.8rem; }
 
 .btn--primary {
   color: #04121C;
@@ -402,13 +427,13 @@ body:not([data-tab="paneReels"]) .pill-select { display: none; }
 }
 .btn--success {
   color: #04140E;
-  background: linear-gradient(135deg, #34D399, #10B981);
-  box-shadow: 0 6px 18px rgba(52, 211, 153, 0.26);
+  background: linear-gradient(135deg, #22C55E, #16A34A);
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.26);
 }
 .btn--danger {
   color: #FFF1F4;
-  background: rgba(244, 63, 94, 0.16);
-  border-color: rgba(244, 63, 94, 0.3);
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 .btn--ghost {
   color: var(--text);
@@ -418,12 +443,12 @@ body:not([data-tab="paneReels"]) .pill-select { display: none; }
 .btn--success-ghost {
   color: var(--success);
   background: var(--success-soft);
-  border-color: rgba(52, 211, 153, 0.28);
+  border-color: rgba(34, 197, 94, 0.28);
 }
 .btn--danger-ghost {
   color: var(--danger);
   background: var(--danger-soft);
-  border-color: rgba(244, 63, 94, 0.26);
+  border-color: rgba(239, 68, 68, 0.26);
 }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .btn-row .btn { flex: 1 1 46%; }
@@ -431,7 +456,7 @@ body:not([data-tab="paneReels"]) .pill-select { display: none; }
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 40px; height: 40px;
+  width: 44px; height: 44px;
   flex: none;
   border-radius: var(--r-pill);
   color: var(--text);
@@ -442,8 +467,23 @@ body:not([data-tab="paneReels"]) .pill-select { display: none; }
 .icon-btn svg { width: 18px; height: 18px; }
 .icon-btn:active { transform: scale(0.92); }
 .icon-btn--ghost { background: var(--surface); }
-.icon-btn--sm { width: 34px; height: 34px; }
+.icon-btn--sm { width: 38px; height: 38px; }
 .icon-btn--sm svg { width: 16px; height: 16px; }
+
+/* --------------------------------------------------------------------------
+   5b. TOUCH TARGET — mở rộng vùng chạm lên ≥44px (Apple HIG) mà không
+   phình giao diện: dùng lớp phủ trong suốt, không ảnh hưởng thị giác.
+   -------------------------------------------------------------------------- */
+.chip, .filter-chip, .icon-btn--sm, .mini-select, .switch, .btn--sm {
+  position: relative;
+}
+.chip::after, .filter-chip::after, .icon-btn--sm::after,
+.mini-select::after, .btn--sm::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+.switch::after { content: ''; position: absolute; inset: -8px 0; }
 
 .badge {
   display: inline-flex;
@@ -500,16 +540,19 @@ body:not([data-tab="paneReels"]) .pill-select { display: none; }
 .callout p { color: var(--text-2); }
 .callout--info {
   border-color: rgba(56, 189, 248, 0.26);
+  border-left: 3px solid var(--primary);
   background: var(--primary-soft);
 }
 .callout--info .callout-label { color: var(--primary); }
 .callout--danger {
-  border-color: rgba(244, 63, 94, 0.3);
+  border-color: rgba(239, 68, 68, 0.3);
+  border-left: 3px solid var(--danger);
   background: var(--danger-soft);
 }
 .callout--danger .callout-label { color: var(--danger); }
 .callout--success {
-  border-color: rgba(52, 211, 153, 0.3);
+  border-color: rgba(34, 197, 94, 0.3);
+  border-left: 3px solid var(--success);
   background: var(--success-soft);
 }
 .callout--success .callout-label { color: var(--success); }
@@ -709,7 +752,7 @@ body[data-theme="light"] .math-block.is-scrollable::after {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 33px;
+  height: 38px;
   padding: 0 13px;
   font-size: 0.78rem;
   font-weight: 600;
@@ -733,7 +776,7 @@ body[data-theme="light"] .math-block.is-scrollable::after {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 30px;
+  height: 36px;
   padding: 0 11px;
   font-size: 0.74rem;
   font-weight: 600;
@@ -828,7 +871,7 @@ body[data-theme="light"] .math-block.is-scrollable::after {
 .mini-select select {
   appearance: none;
   -webkit-appearance: none;
-  height: 32px;
+  height: 38px;
   max-width: 42vw;
   padding: 0 12px;
   font-size: 0.76rem;
@@ -1390,6 +1433,18 @@ body[data-theme="light"] .reel-card .formula-box {
   padding-top: 11px;
   border-top: 1px solid var(--border);
 }
+/* Avatar nhỏ của người đang bình luận (A3) */
+.composer__avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  color: #04121C;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  box-shadow: var(--shadow-sm);
+}
+.composer__avatar svg { width: 20px; height: 20px; }
 .composer input {
   flex: 1 1 auto;
   min-width: 0;
@@ -1743,13 +1798,24 @@ code {
 /* --------------------------------------------------------------------------
    15. RESPONSIVE — màn hình nhỏ & rất nhỏ
    -------------------------------------------------------------------------- */
-@media (max-width: 380px) {
+
+/* Header phải vừa trên điện thoại: bỏ dòng phụ, thu logo, thu dropdown */
+@media (max-width: 480px) {
+  .topbar__inner { gap: 8px; padding: 0 12px; }
+  .brand { gap: 6px; }
+  .brand__mark { width: 32px; height: 32px; }
+  .brand__mark svg { width: 18px; height: 18px; }
   .brand__sub { display: none; }
+  .brand__name { font-size: 0.88rem; }
+  .topbar__actions { gap: 6px; }
+  .streak-chip { height: 32px; padding: 0 9px; }
+  .pill-select select { max-width: 37vw; padding-left: 11px; }
+}
+
+@media (max-width: 380px) {
   .reel-title { font-size: 1.06rem; }
   .reel-scroll { padding-right: 68px; }
-  .rail-btn__circle { width: 40px; height: 40px; }
-  .rail-btn__circle svg { width: 19px; height: 19px; }
-  .fc-controls { grid-template-columns: 40px 1fr 1fr 40px; }
+  .fc-controls { grid-template-columns: 44px 1fr 1fr 44px; }
   .progress-hero__value { font-size: 1.8rem; }
 }
 
@@ -1770,7 +1836,9 @@ code {
 }
 
 @media (max-width: 340px) {
-  .pill-select select { max-width: 38vw; padding-left: 10px; }
+  .pill-select select { max-width: 34vw; padding-left: 10px; }
+  .brand__name { font-size: 0.82rem; }
+  .brand__name em { display: none; }   /* "TOÁN 12" thay vì cụt chữ "TOÁN 12 P…" */
   .stat-grid { grid-template-columns: 1fr; }
 }
 
