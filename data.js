@@ -79,7 +79,7 @@ const FORMULAS_DATA = [
         "$\\frac{x}{\\sqrt{2x+1}}$"
       ],
       "correct": 1,
-      "explain": "Áp dụng công thức: $(\\sqrt{u})' = \\frac{u'}{2\\sqrt{u}} = \\frac{(2x+1)'}{2\\sqrt{2x+1}} = \\frac{1}{\\sqrt{2x+1}}."
+      "explain": "Áp dụng công thức: $(\\sqrt{u})' = \\frac{u'}{2\\sqrt{u}} = \\frac{(2x+1)'}{2\\sqrt{2x+1}} = \\frac{1}{\\sqrt{2x+1}}$."
     }
   },
   {
@@ -100,7 +100,7 @@ const FORMULAS_DATA = [
         "$-\\frac{1}{3}\\sin(3x)$"
       ],
       "correct": 2,
-      "explain": "Ta có $(\\cos u)' = -u' \\cdot \\sin u = -(3x)' \\sin(3x) = -3\\sin(3x)."
+      "explain": "Ta có $(\\cos u)' = -u' \\cdot \\sin u = -(3x)' \\sin(3x) = -3\\sin(3x)$."
     }
   },
   {
@@ -205,7 +205,7 @@ const FORMULAS_DATA = [
         "2.5"
       ],
       "correct": 0,
-      "explain": "Ta có $\\log_2 8 = \\log_2 2^3 = 3$ và $\\log_3 \\sqrt{3} = 0.5 \\implies 3 + 0.5 = 3.5."
+      "explain": "Ta có $\\log_2 8 = \\log_2 2^3 = 3$ và $\\log_3 \\sqrt{3} = 0.5 \\implies 3 + 0.5 = 3.5$."
     }
   },
   {
@@ -226,7 +226,7 @@ const FORMULAS_DATA = [
         "$\\frac{3^{2x}}{\\ln 3}$"
       ],
       "correct": 2,
-      "explain": "$(a^u)' = u' \\cdot a^u \\cdot \\ln a = (2x)' \\cdot 3^{2x} \\cdot \\ln 3 = 2 \\cdot 3^{2x} \\ln 3."
+      "explain": "$(a^u)' = u' \\cdot a^u \\cdot \\ln a = (2x)' \\cdot 3^{2x} \\cdot \\ln 3 = 2 \\cdot 3^{2x} \\ln 3$."
     }
   },
   {
@@ -373,7 +373,7 @@ const FORMULAS_DATA = [
         "2a^3"
       ],
       "correct": 1,
-      "explain": "Thể tích khối chóp: $V = \\frac{1}{3} B \\cdot h = \\frac{1}{3} (6a^2)(2a) = 4a^3."
+      "explain": "Thể tích khối chóp: $V = \\frac{1}{3} B \\cdot h = \\frac{1}{3} (6a^2)(2a) = 4a^3$."
     }
   },
   {
@@ -407,7 +407,7 @@ const FORMULAS_DATA = [
     "variables": "LƯU Ý CỰC KỲ QUAN TRỌNG: Công thức Simson chỉ áp dụng cho chóp TAM GIÁC!",
     "mnemonic": "💡 Mẹo nhớ: Simson chỉ xài cho chóp ĐÁY TAM GIÁC. Nếu đáy tứ giác phải chia đôi thành 2 tam giác để áp dụng!",
     "quiz": {
-      "q": "Cho chóp $S.ABC$. Gọi $M, N$ là trung điểm $SA, SB$. Tỉ số $\frac{V_{S.MNC}}{V_{S.ABC}}$ bằng:",
+      "q": "Cho chóp $S.ABC$. Gọi $M, N$ là trung điểm $SA, SB$. Tỉ số $\\frac{V_{S.MNC}}{V_{S.ABC}}$ bằng:",
       "options": [
         "$\\frac{1}{2}$",
         "$\\frac{1}{4}$",
@@ -415,7 +415,7 @@ const FORMULAS_DATA = [
         "$\\frac{1}{3}$"
       ],
       "correct": 1,
-      "explain": "Tỉ số thể tích: $\\frac{V_{S.MNC}}{V_{S.ABC}} = \\frac{SM}{SA} \\cdot \\frac{SN}{SB} \\cdot \\frac{SC}{SC} = \\frac{1}{2} \\cdot \\frac{1}{2} \\cdot 1 = \\frac{1}{4}."
+      "explain": "Tỉ số thể tích: $\\frac{V_{S.MNC}}{V_{S.ABC}} = \\frac{SM}{SA} \\cdot \\frac{SN}{SB} \\cdot \\frac{SC}{SC} = \\frac{1}{2} \\cdot \\frac{1}{2} \\cdot 1 = \\frac{1}{4}$."
     }
   },
   {
@@ -436,7 +436,7 @@ const FORMULAS_DATA = [
         "d(A, (P)) = 0"
       ],
       "correct": 1,
-      "explain": "Tỉ số khoảng cách: $\\frac{d(A,(P))}{d(B,(P))} = \\frac{IA}{IB} = 1 \\implies d(A, (P)) = d(B, (P))."
+      "explain": "Tỉ số khoảng cách: $\\frac{d(A,(P))}{d(B,(P))} = \\frac{IA}{IB} = 1 \\implies d(A, (P)) = d(B, (P))$."
     }
   },
   {
@@ -457,7 +457,7 @@ const FORMULAS_DATA = [
         "25"
       ],
       "correct": 0,
-      "explain": "Độ dài đường sinh: $l = \\sqrt{h^2 + r^2} = \\sqrt{4^2 + 3^2} = 5."
+      "explain": "Độ dài đường sinh: $l = \\sqrt{h^2 + r^2} = \\sqrt{4^2 + 3^2} = 5$."
     }
   },
   {
@@ -478,7 +478,7 @@ const FORMULAS_DATA = [
         "$9\\pi$"
       ],
       "correct": 0,
-      "explain": "Thể tích khối cầu: $V = \\frac{4}{3}\\pi R^3 = \\frac{4}{3}\\pi (3^3) = 36\\pi."
+      "explain": "Thể tích khối cầu: $V = \\frac{4}{3}\\pi R^3 = \\frac{4}{3}\\pi (3^3) = 36\\pi$."
     }
   },
   {
@@ -491,7 +491,7 @@ const FORMULAS_DATA = [
     "variables": "R_đáy: bán kính đường tròn ngoại tiếp đa giác đáy; h: chiều cao khối chóp.",
     "mnemonic": "💡 Khẩu quyết: Cạnh bên vuông đáy: Căn của R đáy bình cộng (h chia 2) bình. Chóp đều: Cạnh bên bình chia 2 lần chiều cao!",
     "quiz": {
-      "q": "Cho hình chóp $S.ABC$ có $SA perp$ đáy, $SA = 4$, $\triangle ABC$ vuông tại $B$ có $AC = 6$. Bán kính mặt cầu ngoại tiếp là:",
+      "q": "Cho hình chóp $S.ABC$ có $SA \\perp$ đáy, $SA = 4$, $\\triangle ABC$ vuông tại $B$ có $AC = 6$. Bán kính mặt cầu ngoại tiếp là:",
       "options": [
         "$\\sqrt{13}$",
         "5",
@@ -499,7 +499,7 @@ const FORMULAS_DATA = [
         "$2\\sqrt{5}$"
       ],
       "correct": 0,
-      "explain": "Bán kính đáy $R_{\\text{đáy}} = \\frac{AC}{2} = 3$. Chiều cao $h = SA = 4 \\implies R = \\sqrt{R_{\\text{đáy}}^2 + (h/2)^2} = \\sqrt{3^2 + 2^2} = \\sqrt{13}."
+      "explain": "Bán kính đáy $R_{\\text{đáy}} = \\frac{AC}{2} = 3$. Chiều cao $h = SA = 4 \\implies R = \\sqrt{R_{\\text{đáy}}^2 + (h/2)^2} = \\sqrt{3^2 + 2^2} = \\sqrt{13}$."
     }
   },
   {
@@ -520,7 +520,7 @@ const FORMULAS_DATA = [
         "$\\vec{u} + \\vec{v} = \\vec{0}$"
       ],
       "correct": 0,
-      "explain": "$\\vec{u} \\perp \\vec{v} \\iff \\vec{u} \\cdot \\vec{v} = x_1 x_2 + y_1 y_2 + z_1 z_2 = 0."
+      "explain": "$\\vec{u} \\perp \\vec{v} \\iff \\vec{u} \\cdot \\vec{v} = x_1 x_2 + y_1 y_2 + z_1 z_2 = 0$."
     }
   },
   {
@@ -541,7 +541,7 @@ const FORMULAS_DATA = [
         "$\\frac{x}{2} - \\frac{y}{3} - \\frac{z}{4} = 1$"
       ],
       "correct": 0,
-      "explain": "Phương trình mặt phẳng theo đoạn chắn: $\\frac{x}{a} + \\frac{y}{b} + \\frac{z}{c} = 1."
+      "explain": "Phương trình mặt phẳng theo đoạn chắn: $\\frac{x}{a} + \\frac{y}{b} + \\frac{z}{c} = 1$."
     }
   },
   {
@@ -562,7 +562,7 @@ const FORMULAS_DATA = [
         "(2; 1; 4)"
       ],
       "correct": 1,
-      "explain": "Vectơ chỉ phương đọc trực tiếp từ các mẫu số: $\\vec{u} = (2; -1; 4)."
+      "explain": "Vectơ chỉ phương đọc trực tiếp từ các mẫu số: $\\vec{u} = (2; -1; 4)$."
     }
   },
   {
@@ -583,7 +583,7 @@ const FORMULAS_DATA = [
         "3"
       ],
       "correct": 0,
-      "explain": "Khoảng cách: $d(M,(P)) = \\frac{|2(1) - 2(2) + 3 + 5|}{\\sqrt{2^2 + (-2)^2 + 1^2}} = \\frac{6}{3} = 2."
+      "explain": "Khoảng cách: $d(M,(P)) = \\frac{|2(1) - 2(2) + 3 + 5|}{\\sqrt{2^2 + (-2)^2 + 1^2}} = \\frac{6}{3} = 2$."
     }
   },
   {
@@ -604,7 +604,7 @@ const FORMULAS_DATA = [
         "12"
       ],
       "correct": 0,
-      "explain": "Số hạng thứ 5: $u_5 = u_1 + 4d = 3 + 4 \\cdot 4 = 19."
+      "explain": "Số hạng thứ 5: $u_5 = u_1 + 4d = 3 + 4 \\cdot 4 = 19$."
     }
   },
   {
@@ -625,7 +625,7 @@ const FORMULAS_DATA = [
         "8"
       ],
       "correct": 0,
-      "explain": "Số hạng thứ 3: $u_3 = u_1 \\cdot q^2 = 2 \\cdot 3^2 = 18."
+      "explain": "Số hạng thứ 3: $u_3 = u_1 \\cdot q^2 = 2 \\cdot 3^2 = 18$."
     }
   },
   {
@@ -667,7 +667,7 @@ const FORMULAS_DATA = [
         "0"
       ],
       "correct": 0,
-      "explain": "Ta có đạo hàm $y' = 3x^2 - 3$. Hệ số góc tiếp tuyến là $k = y'(2) = 3(2^2) - 3 = 9."
+      "explain": "Ta có đạo hàm $y' = 3x^2 - 3$. Hệ số góc tiếp tuyến là $k = y'(2) = 3(2^2) - 3 = 9$."
     }
   },
   {
@@ -688,7 +688,7 @@ const FORMULAS_DATA = [
         "Trục hoành Ox"
       ],
       "correct": 1,
-      "explain": "Vì $f(x) = f'(x) \\cdot Q(x) + R(x)$, tại các điểm cực trị $f'(x) = 0$ nên tọa độ các điểm cực trị luôn thỏa mãn $y = R(x)."
+      "explain": "Vì $f(x) = f'(x) \\cdot Q(x) + R(x)$, tại các điểm cực trị $f'(x) = 0$ nên tọa độ các điểm cực trị luôn thỏa mãn $y = R(x)$."
     }
   },
   {
@@ -730,7 +730,7 @@ const FORMULAS_DATA = [
         "16"
       ],
       "correct": 1,
-      "explain": "Phương trình $4 - x^2 = 0$ có nghiệm $x = \\pm 2$. Diện tích $S = \\int_{-2}^2 (4 - x^2) \\, dx = \\frac{32}{3}."
+      "explain": "Phương trình $4 - x^2 = 0$ có nghiệm $x = \\pm 2$. Diện tích $S = \\int_{-2}^2 (4 - x^2) \\, dx = \\frac{32}{3}$."
     }
   },
   {
@@ -751,7 +751,7 @@ const FORMULAS_DATA = [
         "z = 4i"
       ],
       "correct": 2,
-      "explain": "Ta có $z^2 = -4 = 4i^2 \\implies z = \\pm 2i."
+      "explain": "Ta có $z^2 = -4 = 4i^2 \\implies z = \\pm 2i$."
     }
   },
   {
@@ -772,7 +772,7 @@ const FORMULAS_DATA = [
         "$\\frac{a^2 \\sqrt{3}}{4}$"
       ],
       "correct": 0,
-      "explain": "Diện tích tam giác đều: $S = (\\text{cạnh})^2 \\cdot \\frac{\\sqrt{3}}{4} = (2a)^2 \\cdot \\frac{\\sqrt{3}}{4} = a^2\\sqrt{3}."
+      "explain": "Diện tích tam giác đều: $S = (\\text{cạnh})^2 \\cdot \\frac{\\sqrt{3}}{4} = (2a)^2 \\cdot \\frac{\\sqrt{3}}{4} = a^2\\sqrt{3}$."
     }
   },
   {
@@ -814,7 +814,7 @@ const FORMULAS_DATA = [
         "$20\\pi$"
       ],
       "correct": 0,
-      "explain": "Diện tích xung quanh hình nón cụt: $S_{xq} = \\pi (R + r) l = \\pi (5 + 2) \\cdot 4 = 28\\pi."
+      "explain": "Diện tích xung quanh hình nón cụt: $S_{xq} = \\pi (R + r) l = \\pi (5 + 2) \\cdot 4 = 28\\pi$."
     }
   },
   {
@@ -835,7 +835,7 @@ const FORMULAS_DATA = [
         "$[\\vec{u}_1, \\vec{u}_2] \\cdot \\vec{M_1 M_2} = 0$"
       ],
       "correct": 0,
-      "explain": "Hai đường thẳng chéo nhau khi chúng không đồng phẳng, tức là tích hỗn tạp $[\\vec{u}_1, \\vec{u}_2] \\cdot \\vec{M_1 M_2} \\neq 0."
+      "explain": "Hai đường thẳng chéo nhau khi chúng không đồng phẳng, tức là tích hỗn tạp $[\\vec{u}_1, \\vec{u}_2] \\cdot \\vec{M_1 M_2} \\neq 0$."
     }
   },
   {
@@ -856,7 +856,7 @@ const FORMULAS_DATA = [
         "5! x^{5-k} 2^k"
       ],
       "correct": 0,
-      "explain": "Số hạng tổng quát $T_{k+1} = C_n^k a^{n-k} b^k$. Với $n = 5, a = x, b = 2 \\implies T_{k+1} = C_5^k x^{5-k} 2^k."
+      "explain": "Số hạng tổng quát $T_{k+1} = C_n^k a^{n-k} b^k$. Với $n = 5, a = x, b = 2 \\implies T_{k+1} = C_5^k x^{5-k} 2^k$."
     }
   },
   {
@@ -877,7 +877,7 @@ const FORMULAS_DATA = [
         "1/18"
       ],
       "correct": 2,
-      "explain": "Hai lần gieo độc lập: $P = P_1 \\cdot P_2 = \\frac{1}{6} \\cdot \\frac{1}{6} = \\frac{1}{36}."
+      "explain": "Hai lần gieo độc lập: $P = P_1 \\cdot P_2 = \\frac{1}{6} \\cdot \\frac{1}{6} = \\frac{1}{36}$."
     }
   }
 ];

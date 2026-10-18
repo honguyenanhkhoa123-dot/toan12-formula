@@ -52,7 +52,45 @@ FORMULAS_DATA.forEach((item, i) => {
   }
 });
 
-console.log(`[Summary] Total Brace Errors: ${braceErrors}, Quiz Option Errors: ${quizOptionErrors}`);
-if (braceErrors === 0 && quizOptionErrors === 0 && duplicates === 0) {
+/* ---------------------------------------------------------------------------
+   Kiểm tra dấu $ cân bằng và lỗi mất dấu \ trong LaTeX.
+   - Số dấu $ lẻ  -> KaTeX không tìm thấy dấu đóng, bỏ qua và để lại LaTeX thô.
+   - Thiếu dấu \  -> JS âm thầm biến "\t" thành TAB, "\p" thành "p"... làm hỏng công thức.
+   --------------------------------------------------------------------------- */
+let mathDelimErrors = 0;
+let lostBackslashErrors = 0;
+
+const dollarCount = s => (s.match(/\$/g) || []).length;
+
+const checkMathText = (label, value) => {
+  if (typeof value !== 'string' || !value) return;
+  if (dollarCount(value) % 2 !== 0) {
+    console.error(`[Error] ${label}: số dấu $ lẻ (${dollarCount(value)}) -> KaTeX sẽ để lại LaTeX thô`);
+    console.error(`        ${value.slice(0, 140)}`);
+    mathDelimErrors++;
+  }
+  if (/[\t\f\r\v\0]/.test(value)) {
+    console.error(`[Error] ${label}: chứa ký tự điều khiển (dấu \\ bị mất khi viết chuỗi LaTeX)`);
+    console.error(`        ${JSON.stringify(value.slice(0, 140))}`);
+    lostBackslashErrors++;
+  }
+};
+
+const walkMathText = (node, label) => {
+  if (typeof node === 'string') return checkMathText(label, node);
+  if (!node || typeof node !== 'object') return;
+  if (Array.isArray(node)) return node.forEach((v, i) => walkMathText(v, `${label}[${i}]`));
+  Object.keys(node).forEach(k => walkMathText(node[k], `${label}.${k}`));
+};
+
+walkMathText(FORMULAS_DATA, 'FORMULAS_DATA');
+
+console.log(`[Summary] Total Brace Errors: ${braceErrors}, Quiz Option Errors: ${quizOptionErrors}, ` +
+  `$ lẻ: ${mathDelimErrors}, mất dấu \\: ${lostBackslashErrors}`);
+if (braceErrors === 0 && quizOptionErrors === 0 && duplicates === 0 &&
+    mathDelimErrors === 0 && lostBackslashErrors === 0) {
   console.log('✅ ALL FORMULAS AND QUIZ ITEMS ARE 100% VALIDATED!');
+} else {
+  console.error('❌ DỮ LIỆU CÒN LỖI — xem chi tiết ở trên.');
+  process.exitCode = 1;
 }

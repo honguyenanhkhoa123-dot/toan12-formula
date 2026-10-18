@@ -832,7 +832,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (quizQuestionText) {
       const q = quiz.q || '';
-      quizQuestionText.innerHTML = q.includes('$') || !q.includes('\\') ? q : `$${q}$`;
+      // Đề bài là văn xuôi trộn công thức nội tuyến ($...$) và có thể chứa dấu <>
+      // (ví dụ "|q| < 1"), nên đặt bằng textContent để trình duyệt không hiểu
+      // nhầm thành thẻ HTML rồi nuốt mất chữ.
+      quizQuestionText.textContent = q.includes('$') || !q.includes('\\') ? q : `$${q}$`;
     }
 
     if (quizOptionsContainer) {
@@ -843,7 +846,10 @@ document.addEventListener('DOMContentLoaded', () => {
         </button>`).join('');
     }
 
-    renderMath(quizOptionsContainer, true);
+    // Phải render CẢ ĐỀ BÀI, không chỉ mỗi khối đáp án. Nếu bỏ sót bước này thì
+    // đề bài hiện ra thô dạng "$y = \sqrt{2x+1}$" trong khi A/B/C/D đã đẹp.
+    if (quizQuestionText) renderMath(quizQuestionText, true);
+    if (quizOptionsContainer) renderMath(quizOptionsContainer, true);
     startQuizTimer(handleQuizTimeout);
   }
 

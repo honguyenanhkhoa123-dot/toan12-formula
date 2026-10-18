@@ -85,7 +85,8 @@ test_dataset.js   # Script kiểm tra dữ liệu: node test_dataset.js
 node test_dataset.js
 ```
 
-Kiểm tra: ID trùng lặp, công thức thiếu quiz, đáp án sai chỉ số, ngoặc `{}` lệch trong LaTeX.
+Kiểm tra: ID trùng lặp, công thức thiếu quiz, đáp án sai chỉ số, ngoặc `{}` lệch trong LaTeX,
+số dấu `$` lẻ (khiến KaTeX bỏ qua và để lại LaTeX thô) và lỗi mất dấu `\` trong chuỗi LaTeX.
 
 ---
 
