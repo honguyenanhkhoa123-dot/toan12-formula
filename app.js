@@ -1,53 +1,119 @@
 /**
- * TOÁN 12 PRO - APPLICATION CORE LOGIC
- * Manages State, LocalStorage, Flashcards, Quiz Engine, Search, KaTeX & Audio Synthesis
+ * TOÁN 12 PRO — APPLICATION CORE
+ * Kiến trúc: app shell cố định + 5 tab (Reels · Tra cứu · Flashcard · Luyện tập · Tài khoản)
+ * Phụ thuộc: data.js (CHAPTERS, FORMULAS_DATA), KaTeX, Web Audio API, localStorage
  */
-
 document.addEventListener('DOMContentLoaded', () => {
-  // ==========================================================================
-  // 1. STATE & STORAGE MANAGEMENT
-  // ==========================================================================
-  const STORAGE_KEYS = {
+  'use strict';
+
+  /* ==========================================================================
+     1. HẰNG SỐ & TIỆN ÍCH
+     ========================================================================== */
+  const KEYS = {
     MEMORIZED: 'toan12_memorized_ids',
     BOOKMARKED: 'toan12_bookmarked_ids',
     THEME: 'toan12_theme',
     SOUND: 'toan12_sound_enabled',
-    STREAK: 'toan12_quiz_streak'
+    STREAK: 'toan12_quiz_streak',
+    BEST: 'toan12_best_streak',
+    REELS_SEEN: 'toan12_reels_tip_seen',
+    commentsFor: (id) => `reels_comments_${id}`
   };
 
+  const VALID_FORMULA_IDS = new Set(FORMULAS_DATA.map((f) => f.id));
+  const LETTERS = ['A', 'B', 'C', 'D'];
+  const QUIZ_SECONDS = 30;
+  const REFLEX_SECONDS = 10;
+
+  const ICON = {
+    bookmark:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 20.5 12 16.2l-6.5 4.3V5.5A2 2 0 0 1 7.5 3.5h9a2 2 0 0 1 2 2z"/></svg>',
+    comment:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.8c0 4-3.8 7.2-8.5 7.2a10 10 0 0 1-2.6-.3L4.6 21l1.2-3.6a6.9 6.9 0 0 1-2.3-4.9c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2z"/></svg>',
+    image:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="4"/><circle cx="8.6" cy="9.2" r="1.6"/><path d="m20.6 15.4-4.4-4.2L5.4 20.5"/></svg>',
+    music:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5V5.2l10-1.7v12"/><circle cx="6.3" cy="17.8" r="2.7"/><circle cx="16.3" cy="15.8" r="2.7"/></svg>'
+  };
+
+  const escHtml = (value) =>
+    String(value == null ? '' : value).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+
+  const escAttr = escHtml;
+
+  /** Bỏ tiền tố "💡 Mẹo nhớ:" / "Khẩu quyết:" khỏi dữ liệu để không lặp tiêu đề. */
+  function stripMnemonicPrefix(text) {
+    if (!text) return '';
+    return String(text)
+      .replace(/^\s*💡\s*/u, '')
+      .replace(/^(mẹo nhớ|khẩu quyết|mẹo casio|mẹo|nhớ kỹ|ghi nhớ)\s*[:\-–]\s*/iu, '')
+      .trim();
+  }
+
+  const formatNumber = (num) => (num >= 1000 ? `${(num / 1000).toFixed(1)}k` : String(num));
+
+  /** "8.9k" -> 8900 ; "128" -> 128 */
+  function parseCount(text) {
+    const value = String(text == null ? '' : text).trim().toLowerCase();
+    if (!value) return 0;
+    const num = parseFloat(value.replace(',', '.'));
+    if (Number.isNaN(num)) return 0;
+    return Math.round(value.endsWith('k') ? num * 1000 : num);
+  }
+
+  function readJSON(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (err) {
+      return fallback;
+    }
+  }
+
+  const readSet = (key) => new Set(readJSON(key, []));
+  const writeSet = (key, set) => localStorage.setItem(key, JSON.stringify([...set]));
+
+  /* ==========================================================================
+     2. STATE
+     ========================================================================== */
   const state = {
-    activeTab: 'paneHandbook',
+    activeTab: 'paneReels',
+    // Tra cứu
     selectedChapter: 'all',
     statusFilter: 'all',
     searchQuery: '',
-    memorizedIds: new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.MEMORIZED) || '[]')),
-    bookmarkedIds: new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOKMARKED) || '[]')),
-    theme: localStorage.getItem(STORAGE_KEYS.THEME) || 'dark',
-    soundEnabled: localStorage.getItem(STORAGE_KEYS.SOUND) !== 'false',
-    // Flashcard State
+    memorizedIds: readSet(KEYS.MEMORIZED),
+    bookmarkedIds: readSet(KEYS.BOOKMARKED),
+    // Giao diện
+    theme: localStorage.getItem(KEYS.THEME) || 'dark',
+    soundEnabled: localStorage.getItem(KEYS.SOUND) !== 'false',
+    // Flashcard
+    fcReady: false,
     fcIndex: 0,
-    fcFlipped: false,
     fcItems: [],
-    // Quiz State
+    // Quiz
+    quizReady: false,
     quizList: [],
     quizIndex: 0,
     quizScore: 0,
-    quizStreak: parseInt(localStorage.getItem(STORAGE_KEYS.STREAK) || '0', 10),
-    quizAnswered: false
+    quizAnswered: false,
+    streak: parseInt(localStorage.getItem(KEYS.STREAK) || '0', 10) || 0,
+    bestStreak: parseInt(localStorage.getItem(KEYS.BEST) || '0', 10) || 0
   };
 
-  // ==========================================================================
-  // 2. WEB AUDIO SYNTHESIS (TACTILE HAPTIC AUDIO FEEDBACK)
-  // ==========================================================================
+  const $ = (id) => document.getElementById(id);
+
+  /* ==========================================================================
+     3. ÂM THANH (Web Audio — không cần file mp3)
+     ========================================================================== */
   let audioCtx = null;
   function getAudioContext() {
-    if (!audioCtx) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) audioCtx = new AudioContext();
-    }
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    if (!audioCtx) audioCtx = new Ctor();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
 
@@ -56,388 +122,393 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
-
       const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
 
-      if (type === 'click') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
-        osc.start(now);
-        osc.stop(now + 0.05);
-      } else if (type === 'flip') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(320, now);
-        osc.frequency.exponentialRampToValueAtTime(480, now + 0.12);
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
-        osc.start(now);
-        osc.stop(now + 0.12);
-      } else if (type === 'success') {
-        // Happy major chord
-        [523.25, 659.25, 783.99].forEach((freq, idx) => {
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.connect(g);
-          g.connect(ctx.destination);
-          o.type = 'sine';
-          o.frequency.setValueAtTime(freq, now + idx * 0.06);
-          g.gain.setValueAtTime(0.12, now + idx * 0.06);
-          g.gain.linearRampToValueAtTime(0.01, now + idx * 0.06 + 0.25);
-          o.start(now + idx * 0.06);
-          o.stop(now + idx * 0.06 + 0.25);
-        });
-      } else if (type === 'fail') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(280, now);
-        osc.frequency.linearRampToValueAtTime(180, now + 0.2);
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
-        osc.start(now);
-        osc.stop(now + 0.2);
+      const tone = (freq, start, dur, wave, peak) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = wave;
+        osc.frequency.setValueAtTime(freq, now + start);
+        gain.gain.setValueAtTime(Math.min(peak, 0.001), now + start);
+        gain.gain.linearRampToValueAtTime(peak, now + start + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0005, now + start + dur);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + start);
+        osc.stop(now + start + dur + 0.02);
+      };
+
+      if (type === 'click') tone(660, 0, 0.06, 'sine', 0.06);
+      else if (type === 'flip') tone(420, 0, 0.11, 'triangle', 0.09);
+      else if (type === 'success') [523.25, 659.25, 783.99].forEach((f, i) => tone(f, i * 0.06, 0.24, 'sine', 0.09));
+      else if (type === 'fail') {
+        tone(300, 0, 0.16, 'sawtooth', 0.07);
+        tone(200, 0.1, 0.2, 'sawtooth', 0.06);
       }
-    } catch (e) {
-      console.warn('Audio play error', e);
+    } catch (err) {
+      /* Bỏ qua: audio là tính năng phụ */
     }
   }
 
-  // ==========================================================================
-  // 3. UI RENDERING & THEME
-  // ==========================================================================
-  const body = document.body;
-  const themeToggleBtn = document.getElementById('themeToggleBtn');
-  const soundToggleBtn = document.getElementById('soundToggleBtn');
-  const toastBox = document.getElementById('toastBox');
+  /* ==========================================================================
+     4. TOAST
+     ========================================================================== */
+  const toastBox = $('toastBox');
+  let toastTimer = null;
 
-  // Initialize Theme
-  body.setAttribute('data-theme', state.theme);
-  themeToggleBtn.querySelector('.theme-icon').textContent = state.theme === 'dark' ? '🌙' : '☀️';
-
-  themeToggleBtn.addEventListener('click', () => {
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-    body.setAttribute('data-theme', state.theme);
-    localStorage.setItem(STORAGE_KEYS.THEME, state.theme);
-    themeToggleBtn.querySelector('.theme-icon').textContent = state.theme === 'dark' ? '🌙' : '☀️';
-    playSound('click');
-    showToast(`Đã chuyển sang giao diện ${state.theme === 'dark' ? 'Tối' : 'Sáng'}`);
-  });
-
-  // Initialize Sound
-  soundToggleBtn.querySelector('.sound-icon').textContent = state.soundEnabled ? '🔊' : '🔇';
-  soundToggleBtn.addEventListener('click', () => {
-    state.soundEnabled = !state.soundEnabled;
-    localStorage.setItem(STORAGE_KEYS.SOUND, state.soundEnabled);
-    soundToggleBtn.querySelector('.sound-icon').textContent = state.soundEnabled ? '🔊' : '🔇';
-    playSound('click');
-    showToast(state.soundEnabled ? 'Đã bật âm thanh hiệu ứng' : 'Đã tắt âm thanh hiệu ứng');
-  });
-
-  function showToast(msg) {
+  function showToast(message) {
     if (!toastBox) return;
-    toastBox.textContent = msg;
+    toastBox.textContent = message;
     toastBox.classList.add('show');
-    clearTimeout(toastBox._timer);
-    toastBox._timer = setTimeout(() => {
-      toastBox.classList.remove('show');
-    }, 2400);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastBox.classList.remove('show'), 2400);
   }
 
-  // ==========================================================================
-  // 4. KATEX MATH RENDERING HELPER
-  // ==========================================================================
-  function renderAllMath(element) {
-    const target = element || document.body;
-    if (window.renderMathInElement) {
-      try {
-        window.renderMathInElement(target, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false },
-            { left: '\\(', right: '\\)', display: false },
-            { left: '\\[', right: '\\]', display: true }
-          ],
-          throwOnError: false
-        });
-      } catch (err) {
-        console.warn('KaTeX render error:', err);
-      }
-    } else {
-      setTimeout(() => renderAllMath(target), 300);
+  /* ==========================================================================
+     5. KATEX
+     ========================================================================== */
+  const mathRendered = new WeakSet();
+  const supportsZoom = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('zoom', '0.5');
+
+  /**
+   * Đưa công thức về vừa bề rộng khung.
+   * - Thu nhỏ (zoom) nếu chỉ cần giảm nhẹ (>= 0.8) để vẫn đọc được.
+   * - Nếu vẫn quá dài: đánh dấu `.is-scrollable` để hiện chỉ báo cuộn ngang.
+   * Đọc trước – ghi sau để hạn chế reflow.
+   */
+  function fitFormulas(root) {
+    const scope = root || document;
+    if (!scope.querySelectorAll) return;
+
+    const plan = [];
+    scope.querySelectorAll('.formula-box, .math-block, .story-formula').forEach((box) => {
+      const display = box.querySelector('.katex-display');
+      if (!display) return;
+      if (!box.clientWidth) return; // tab đang ẩn: giữ nguyên trạng thái cũ
+      display.style.zoom = '';
+      box.classList.remove('is-scrollable');
+      plan.push({ box, display });
+    });
+
+    const measured = plan.map((entry) => {
+      const cs = getComputedStyle(entry.box);
+      const avail = entry.box.clientWidth
+        - (parseFloat(cs.paddingLeft) || 0)
+        - (parseFloat(cs.paddingRight) || 0);
+      const inner = entry.display.querySelector('.katex') || entry.display;
+      return Object.assign(entry, { avail, natural: inner.getBoundingClientRect().width });
+    });
+
+    measured.forEach(({ box, display, avail, natural }) => {
+      if (!avail || !natural || natural <= avail + 1) return;
+      const scale = avail / natural;
+      if (supportsZoom && scale >= 0.8) display.style.zoom = scale.toFixed(3);
+      else box.classList.add('is-scrollable');
+    });
+  }
+
+  /** @returns {boolean} true nếu KaTeX đã thực sự xử lý phần tử này */
+  function renderMath(el, force) {
+    const target = el || document.body;
+    if (!force && mathRendered.has(target)) return true;
+    if (!window.renderMathInElement) return false; // CDN chưa sẵn sàng — sẽ thử lại
+    try {
+      window.renderMathInElement(target, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true }
+        ],
+        throwOnError: false,
+        ignoredClasses: ['katex', 'no-math']
+      });
+      mathRendered.add(target);
+    } catch (err) {
+      /* throwOnError:false đã lo phần lớn trường hợp */
     }
+    fitFormulas(target);
+    return true;
   }
 
-  // ==========================================================================
-  // 5. NAVIGATION & TABS
-  // ==========================================================================
-  const bottomNav = document.getElementById('bottomNav');
-  const tabPanes = document.querySelectorAll('.tab-pane');
-  const searchFilterWrapper = document.querySelector('.search-filter-wrapper');
+  // Nếu CDN KaTeX bị chặn/offline, thử lại vài nhịp rồi thôi.
+  let mathRetries = 0;
+  (function ensureMathLib() {
+    if (window.renderMathInElement || mathRetries >= 12) return;
+    mathRetries += 1;
+    setTimeout(() => {
+      if (window.renderMathInElement) renderMath(document.body, true);
+      else ensureMathLib();
+    }, 250);
+  })();
 
-  bottomNav.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const targetTabId = btn.getAttribute('data-tab');
-      switchTab(targetTabId);
+  /* ==========================================================================
+     6. GIAO DIỆN: THEME & ÂM THANH
+     ========================================================================== */
+  const themeToggleBtn = $('themeToggleBtn');
+  const soundToggleBtn = $('soundToggleBtn');
+  const body = document.body;
+
+  function applyTheme(theme) {
+    state.theme = theme === 'light' ? 'light' : 'dark';
+    body.dataset.theme = state.theme;
+    localStorage.setItem(KEYS.THEME, state.theme);
+    if (themeToggleBtn) themeToggleBtn.setAttribute('aria-checked', String(state.theme === 'dark'));
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', state.theme === 'dark' ? '#0B0F19' : '#F5F7FB');
+  }
+
+  function applySound(enabled) {
+    state.soundEnabled = !!enabled;
+    localStorage.setItem(KEYS.SOUND, String(state.soundEnabled));
+    if (soundToggleBtn) soundToggleBtn.setAttribute('aria-checked', String(state.soundEnabled));
+  }
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+      playSound('click');
+      showToast(state.theme === 'dark' ? 'Đã bật giao diện tối' : 'Đã bật giao diện sáng');
     });
-  });
+  }
 
-  function switchTab(targetTabId) {
-    playSound('click');
-    state.activeTab = targetTabId;
-
-    // Update bottom nav active state
-    bottomNav.querySelectorAll('.nav-item').forEach(b => {
-      b.classList.toggle('active', b.getAttribute('data-tab') === targetTabId);
+  if (soundToggleBtn) {
+    soundToggleBtn.addEventListener('click', () => {
+      applySound(!state.soundEnabled);
+      playSound('click');
+      showToast(state.soundEnabled ? 'Đã bật âm thanh' : 'Đã tắt âm thanh');
     });
+  }
 
-    // Update panes
-    tabPanes.forEach(pane => {
-      pane.classList.toggle('active', pane.id === targetTabId);
-    });
+  /* ==========================================================================
+     7. ĐIỀU HƯỚNG TAB
+     ========================================================================== */
+  const bottomNav = $('bottomNav');
+  const tabPanes = Array.from(document.querySelectorAll('.tab-pane'));
 
-    // Toggle reels body mode for clean immersive mobile feed
-    document.body.classList.toggle('in-reels-mode', targetTabId === 'paneReels');
+  function switchTab(tabId, options) {
+    const opts = options || {};
+    if (!opts.silent) playSound('click');
 
-    // Only show search filter bar in Handbook tab
-    if (searchFilterWrapper) {
-      searchFilterWrapper.style.display = (targetTabId === 'paneHandbook') ? 'flex' : 'none';
+    state.activeTab = tabId;
+    body.dataset.tab = tabId;
+
+    tabPanes.forEach((pane) => pane.classList.toggle('active', pane.id === tabId));
+
+    if (bottomNav) {
+      bottomNav.querySelectorAll('.nav-item').forEach((btn) => {
+        const isActive = btn.dataset.tab === tabId;
+        btn.classList.toggle('active', isActive);
+        if (isActive) btn.setAttribute('aria-current', 'page');
+        else btn.removeAttribute('aria-current');
+      });
     }
 
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // Initialize specific tab views
-    if (targetTabId === 'paneFlashcard') {
-      initFlashcards();
-    } else if (targetTabId === 'paneQuiz') {
-      initQuiz();
-    } else if (targetTabId === 'paneReels') {
-      initReelsFeed();
+    const pane = $(tabId);
+    if (pane) {
+      pane.scrollTop = 0;
+      fitFormulas(pane);
     }
+
+    if (tabId === 'paneReels') initReels();
+    else if (tabId === 'paneFlashcard') initFlashcards();
+    else if (tabId === 'paneQuiz') initQuiz();
+    else if (tabId === 'paneAccount') updateProgress();
   }
 
-  // Header Reels Hot Button
-  const headerReelsBtn = document.getElementById('headerReelsBtn');
-  if (headerReelsBtn) {
-    headerReelsBtn.addEventListener('click', () => {
-      switchTab('paneReels');
+  if (bottomNav) {
+    bottomNav.addEventListener('click', (e) => {
+      const btn = e.target.closest('.nav-item');
+      if (btn && btn.dataset.tab) switchTab(btn.dataset.tab);
     });
   }
 
-  // ==========================================================================
-  // 6. CHAPTER CHIPS & FILTERING
-  // ==========================================================================
-  const chapterChipsContainer = document.getElementById('chapterChips');
-  const searchInput = document.getElementById('searchInput');
-  const clearSearchBtn = document.getElementById('clearSearchBtn');
-  const statusBtns = document.querySelectorAll('.status-btn');
+  const brandHomeBtn = $('brandHomeBtn');
+  if (brandHomeBtn) brandHomeBtn.addEventListener('click', () => switchTab('paneReels'));
+
+  /* ==========================================================================
+     8. TAB TRA CỨU
+     ========================================================================== */
+  const formulaList = $('formulaList');
+  const emptyState = $('emptyState');
+  const chapterChips = $('chapterChips');
+  const searchInput = $('searchInput');
+  const clearSearchBtn = $('clearSearchBtn');
 
   function renderChapterChips() {
-    chapterChipsContainer.innerHTML = '';
-    CHAPTERS.forEach(chap => {
-      const count = chap.id === 'all' 
-        ? FORMULAS_DATA.length 
-        : FORMULAS_DATA.filter(f => f.chapter === chap.id).length;
-      
-      const chip = document.createElement('button');
-      chip.className = `chip-btn ${state.selectedChapter === chap.id ? 'active' : ''}`;
-      chip.innerHTML = `<span>${chap.icon}</span> <span>${chap.name} (${count})</span>`;
-      chip.addEventListener('click', () => {
-        playSound('click');
-        state.selectedChapter = chap.id;
-        document.querySelectorAll('.chip-btn').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        renderHandbookList();
-      });
-      chapterChipsContainer.appendChild(chip);
-    });
+    if (!chapterChips) return;
+    chapterChips.innerHTML = CHAPTERS.map((chap) => {
+      const count = chap.id === 'all'
+        ? FORMULAS_DATA.length
+        : FORMULAS_DATA.filter((f) => f.chapter === chap.id).length;
+      return `<button class="chip${state.selectedChapter === chap.id ? ' active' : ''}" type="button" role="tab"
+                data-chapter="${chap.id}" aria-selected="${state.selectedChapter === chap.id}">
+                <span aria-hidden="true">${chap.icon}</span><span>${escHtml(chap.name)}</span>
+                <span class="chip__count">${count}</span>
+              </button>`;
+    }).join('');
   }
 
-  // Search input handler
-  searchInput.addEventListener('input', (e) => {
-    state.searchQuery = e.target.value.trim().toLowerCase();
-    clearSearchBtn.style.display = state.searchQuery ? 'block' : 'none';
-    renderHandbookList();
-  });
-
-  clearSearchBtn.addEventListener('click', () => {
-    searchInput.value = '';
-    state.searchQuery = '';
-    clearSearchBtn.style.display = 'none';
-    searchInput.focus();
-    renderHandbookList();
-  });
-
-  // Status Filter Buttons
-  statusBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+  if (chapterChips) {
+    chapterChips.addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      state.selectedChapter = chip.dataset.chapter;
       playSound('click');
-      statusBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.statusFilter = btn.getAttribute('data-filter');
-      renderHandbookList();
+      renderChapterChips();
+      renderHandbook();
     });
-  });
-
-  document.getElementById('resetFilterBtn').addEventListener('click', () => {
-    state.selectedChapter = 'all';
-    state.statusFilter = 'all';
-    state.searchQuery = '';
-    searchInput.value = '';
-    clearSearchBtn.style.display = 'none';
-    document.querySelectorAll('.chip-btn').forEach(c => c.classList.toggle('active', c.textContent.includes('Tất cả')));
-    statusBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-filter') === 'all'));
-    renderHandbookList();
-  });
-
-  // ==========================================================================
-  // 7. HANDBOOK LIST RENDERING & ACTIONS
-  // ==========================================================================
-  const formulaList = document.getElementById('formulaList');
-  const emptyState = document.getElementById('emptyState');
+  }
 
   function getFilteredFormulas() {
-    return FORMULAS_DATA.filter(item => {
-      // 1. Chapter filter
-      if (state.selectedChapter !== 'all' && item.chapter !== state.selectedChapter) {
-        return false;
-      }
-      // 2. Status filter
-      const isMemorized = state.memorizedIds.has(item.id);
-      const isBookmarked = state.bookmarkedIds.has(item.id);
+    const query = state.searchQuery;
+    return FORMULAS_DATA.filter((item) => {
+      if (state.selectedChapter !== 'all' && item.chapter !== state.selectedChapter) return false;
 
-      if (state.statusFilter === 'memorized' && !isMemorized) return false;
-      if (state.statusFilter === 'unmemorized' && isMemorized) return false;
-      if (state.statusFilter === 'bookmarked' && !isBookmarked) return false;
+      if (state.statusFilter === 'memorized' && !state.memorizedIds.has(item.id)) return false;
+      if (state.statusFilter === 'unmemorized' && state.memorizedIds.has(item.id)) return false;
+      if (state.statusFilter === 'bookmarked' && !state.bookmarkedIds.has(item.id)) return false;
 
-      // 3. Search query
-      if (state.searchQuery) {
-        const query = state.searchQuery;
-        const matchTitle = item.title.toLowerCase().includes(query);
-        const matchDesc = item.desc.toLowerCase().includes(query);
-        const matchChap = item.chapterName.toLowerCase().includes(query);
-        const matchMnemonic = (item.mnemonic || '').toLowerCase().includes(query);
-        if (!matchTitle && !matchDesc && !matchChap && !matchMnemonic) {
-          return false;
-        }
-      }
-
-      return true;
+      if (!query) return true;
+      const haystack = [item.title, item.desc, item.chapterName, item.mnemonic, item.variables]
+        .filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(query);
     });
   }
 
-  function renderHandbookList() {
-    const filtered = getFilteredFormulas();
-    updateCounts();
+  function renderHandbook() {
+    if (!formulaList) return;
+    const items = getFilteredFormulas();
+    updateProgress();
 
-    if (filtered.length === 0) {
+    if (!items.length) {
       formulaList.innerHTML = '';
-      emptyState.style.display = 'block';
+      if (emptyState) emptyState.hidden = false;
       return;
     }
+    if (emptyState) emptyState.hidden = true;
 
-    emptyState.style.display = 'none';
-    formulaList.innerHTML = '';
+    formulaList.innerHTML = items.map((item) => {
+      const memorized = state.memorizedIds.has(item.id);
+      const bookmarked = state.bookmarkedIds.has(item.id);
+      const mnemonic = stripMnemonicPrefix(item.mnemonic);
 
-    filtered.forEach(item => {
-      const isMemorized = state.memorizedIds.has(item.id);
-      const isBookmarked = state.bookmarkedIds.has(item.id);
+      return `
+        <article class="formula-card" id="card-${item.id}">
+          <header class="formula-card__head">
+            <span class="badge badge--chapter">${escHtml(item.chapterName)}</span>
+            <button class="icon-btn icon-btn--sm save-toggle${bookmarked ? ' is-active' : ''}" type="button"
+                    data-action="bookmark" data-id="${item.id}" aria-pressed="${bookmarked}"
+                    aria-label="Lưu công thức vào danh sách yêu thích">${ICON.bookmark}</button>
+          </header>
 
-      const card = document.createElement('article');
-      card.className = 'formula-card';
-      card.id = `card-${item.id}`;
+          <h3 class="formula-card__title">${item.title}</h3>
 
-      card.innerHTML = `
-        <div class="card-header-row">
-          <span class="chapter-badge">${item.chapterName}</span>
-          <div class="card-actions-quick">
-            <button class="action-icon-btn ${isBookmarked ? 'bookmarked' : ''}" data-action="bookmark" data-id="${item.id}" aria-label="Đánh dấu yêu thích" title="Lưu yêu thích">
-              ${isBookmarked ? '⭐' : '☆'}
+          <div class="formula-box"><div class="math-render">$$${item.latex}$$</div></div>
+
+          ${item.desc ? `<p class="formula-card__desc">${item.desc}</p>` : ''}
+          ${item.variables ? `<p class="formula-card__vars">${item.variables}</p>` : ''}
+
+          ${mnemonic ? `
+            <div class="callout callout--info">
+              <span class="callout-label">💡 Mẹo nhớ nhanh:</span>
+              <p>${mnemonic}</p>
+            </div>` : ''}
+
+          <footer class="formula-card__foot">
+            <button class="btn btn--sm ${memorized ? 'btn--success-ghost' : 'btn--ghost'}" type="button"
+                    data-action="memorize" data-id="${item.id}">
+              ${memorized ? 'Đã thuộc' : 'Chưa thuộc'}
             </button>
-          </div>
-        </div>
+            <button class="btn btn--sm btn--ghost" type="button"
+                    data-action="copy" data-latex="${encodeURIComponent(item.latex)}">Sao chép LaTeX</button>
+          </footer>
+        </article>`;
+    }).join('');
 
-        <h3 class="formula-title">${item.title}</h3>
-
-        <div class="math-container">
-          $$${item.latex}$$
-        </div>
-
-        <p class="formula-desc">${item.desc}</p>
-
-        ${item.variables ? `<p class="formula-variables">📝 ${item.variables}</p>` : ''}
-
-        ${item.mnemonic ? `<div class="mnemonic-box"><strong>${item.mnemonic}</strong></div>` : ''}
-
-        <div class="card-footer-row">
-          <button class="memorize-btn ${isMemorized ? 'is-memorized' : ''}" data-action="memorize" data-id="${item.id}">
-            <span>${isMemorized ? '✅ Đã thuộc' : '⏳ Chưa thuộc'}</span>
-          </button>
-          <button class="copy-latex-btn" data-action="copy" data-latex="${encodeURIComponent(item.latex)}">
-            📋 Sao chép
-          </button>
-        </div>
-      `;
-
-      formulaList.appendChild(card);
-    });
-
-    // Render KaTeX for math formulas inside cards
-    renderAllMath(formulaList);
+    renderMath(formulaList, true);
   }
 
-  // Delegated events for cards (bookmark, memorize, copy)
-  formulaList.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-action]');
-    if (!btn) return;
+  if (formulaList) {
+    formulaList.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const { action, id } = btn.dataset;
 
-    const action = btn.getAttribute('data-action');
-    const id = btn.getAttribute('data-id');
+      if (action === 'memorize') {
+        if (state.memorizedIds.has(id)) {
+          state.memorizedIds.delete(id);
+          playSound('click');
+          showToast('Đã chuyển về: Chưa thuộc');
+        } else {
+          state.memorizedIds.add(id);
+          playSound('success');
+          showToast('Đã ghi nhận: Đã thuộc công thức này');
+        }
+        writeSet(KEYS.MEMORIZED, state.memorizedIds);
+        renderHandbook();
+      } else if (action === 'bookmark') {
+        if (state.bookmarkedIds.has(id)) {
+          state.bookmarkedIds.delete(id);
+          showToast('Đã bỏ lưu');
+        } else {
+          state.bookmarkedIds.add(id);
+          playSound('success');
+          showToast('Đã lưu vào danh sách yêu thích');
+        }
+        writeSet(KEYS.BOOKMARKED, state.bookmarkedIds);
+        renderHandbook();
+      } else if (action === 'copy') {
+        copyToClipboard(decodeURIComponent(btn.dataset.latex), 'Đã sao chép mã LaTeX');
+      }
+    });
+  }
 
-    if (action === 'memorize') {
-      const wasMemorized = state.memorizedIds.has(id);
-      if (wasMemorized) {
-        state.memorizedIds.delete(id);
-        playSound('fail');
-        showToast('Đã chuyển về trạng thái: Chưa thuộc');
-      } else {
-        state.memorizedIds.add(id);
-        playSound('success');
-        showToast('🎉 Tuyệt vời! Đã ghi nhận thuộc công thức!');
-      }
-      localStorage.setItem(STORAGE_KEYS.MEMORIZED, JSON.stringify([...state.memorizedIds]));
-      renderHandbookList();
-    } else if (action === 'bookmark') {
-      const wasBookmarked = state.bookmarkedIds.has(id);
-      if (wasBookmarked) {
-        state.bookmarkedIds.delete(id);
-        playSound('click');
-        showToast('Đã bỏ yêu thích');
-      } else {
-        state.bookmarkedIds.add(id);
-        playSound('success');
-        showToast('⭐ Đã thêm vào danh sách yêu thích!');
-      }
-      localStorage.setItem(STORAGE_KEYS.BOOKMARKED, JSON.stringify([...state.bookmarkedIds]));
-      renderHandbookList();
-    } else if (action === 'copy') {
-      const latex = decodeURIComponent(btn.getAttribute('data-latex'));
-      copyToClipboard(latex, '📋 Đã sao chép công thức vào clipboard!');
-    }
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      state.searchQuery = e.target.value.trim().toLowerCase();
+      if (clearSearchBtn) clearSearchBtn.hidden = !state.searchQuery;
+      renderHandbook();
+    });
+  }
+
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      state.searchQuery = '';
+      clearSearchBtn.hidden = true;
+      searchInput.focus();
+      renderHandbook();
+    });
+  }
+
+  document.querySelectorAll('.filter-chip').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.statusFilter = btn.dataset.filter;
+      playSound('click');
+      document.querySelectorAll('.filter-chip').forEach((b) => b.classList.toggle('active', b === btn));
+      renderHandbook();
+    });
   });
 
-  // Resilient Clipboard Copy Helper
-  function copyToClipboard(text, successMsg = '📋 Đã sao chép vào clipboard!') {
+  const resetFilterBtn = $('resetFilterBtn');
+  if (resetFilterBtn) {
+    resetFilterBtn.addEventListener('click', () => {
+      state.selectedChapter = 'all';
+      state.statusFilter = 'all';
+      state.searchQuery = '';
+      if (searchInput) searchInput.value = '';
+      if (clearSearchBtn) clearSearchBtn.hidden = true;
+      document.querySelectorAll('.filter-chip').forEach((b) => b.classList.toggle('active', b.dataset.filter === 'all'));
+      renderChapterChips();
+      renderHandbook();
+    });
+  }
+
+  /* ------------------------------- Clipboard ------------------------------ */
+  function copyToClipboard(text, successMsg) {
+    const done = () => { playSound('click'); showToast(successMsg); };
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(() => {
-        playSound('click');
-        showToast(successMsg);
-      }).catch(() => fallbackCopy(text, successMsg));
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, successMsg));
     } else {
       fallbackCopy(text, successMsg);
     }
@@ -447,1246 +518,1250 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const ta = document.createElement('textarea');
       ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
       document.body.appendChild(ta);
-      ta.focus();
       ta.select();
       const ok = document.execCommand('copy');
       document.body.removeChild(ta);
-      if (ok) {
-        playSound('click');
-        showToast(successMsg);
-      } else {
-        showToast('⚠️ Vui lòng copy thủ công');
-      }
-    } catch (e) {
-      showToast('⚠️ Không thể sao chép');
+      if (ok) { playSound('click'); showToast(successMsg); }
+      else showToast('Không sao chép được, hãy chọn thủ công');
+    } catch (err) {
+      showToast('Không sao chép được');
     }
   }
 
-  // Update Counters & Progress Indicator
-  function updateCounts() {
+  /* ==========================================================================
+     9. TIẾN ĐỘ / THỐNG KÊ
+     ========================================================================== */
+  function rankFor(percent) {
+    if (percent >= 100) return 'Bậc thầy công thức';
+    if (percent >= 80) return 'Đại sư';
+    if (percent >= 50) return 'Cao thủ';
+    if (percent >= 20) return 'Chiến binh';
+    if (percent > 0) return 'Tập sự';
+    return 'Tân binh';
+  }
+
+  function updateProgress() {
     const total = FORMULAS_DATA.length;
     const memorized = state.memorizedIds.size;
     const bookmarked = state.bookmarkedIds.size;
-    const unmemorized = total - memorized;
-    const percent = Math.round((memorized / (total || 1)) * 100);
+    const percent = total ? Math.round((memorized / total) * 100) : 0;
 
-    // Update filter badges
-    const countAllEl = document.getElementById('countAll');
-    if (countAllEl) countAllEl.textContent = total;
-    const countMemorizedEl = document.getElementById('countMemorized');
-    if (countMemorizedEl) countMemorizedEl.textContent = memorized;
-    const countUnmemorizedEl = document.getElementById('countUnmemorized');
-    if (countUnmemorizedEl) countUnmemorizedEl.textContent = unmemorized;
-    const countBookmarkedEl = document.getElementById('countBookmarked');
-    if (countBookmarkedEl) countBookmarkedEl.textContent = bookmarked;
+    const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
 
-    // Update header progress pill
-    const globalProgressText = document.getElementById('globalProgressText');
-    if (globalProgressText) globalProgressText.textContent = `${percent}%`;
+    setText('countAll', total);
+    setText('countMemorized', memorized);
+    setText('countUnmemorized', Math.max(0, total - memorized));
+    setText('countBookmarked', bookmarked);
 
-    // Update Cyber HUD Hero Metrics
-    const hudTotalFormulas = document.getElementById('hudTotalFormulas');
-    if (hudTotalFormulas) hudTotalFormulas.textContent = `${total}+`;
+    setText('accountTotal', total);
+    setText('accountMemorized', memorized);
+    setText('accountBookmarked', bookmarked);
+    setText('accountStreak', state.bestStreak);
+    setText('quizStreakCount', state.streak);
+    setText('accountProgressText', `${percent}%`);
+    setText('accountRank', rankFor(percent));
 
-    const hudMemorizedRatio = document.getElementById('hudMemorizedRatio');
-    if (hudMemorizedRatio) hudMemorizedRatio.textContent = `${percent}%`;
-
-    const hudProgressBar = document.getElementById('hudProgressBar');
-    if (hudProgressBar) hudProgressBar.style.width = `${percent}%`;
-
-    // Dynamic Mastery Rank
-    const hudMasteryRank = document.getElementById('hudMasteryRank');
-    const hudRankBar = document.getElementById('hudRankBar');
-    let rankTitle = 'TẬP SỰ';
-    let rankWidth = '15%';
-
-    if (percent === 100) {
-      rankTitle = 'THẦN TOÁN 10';
-      rankWidth = '100%';
-    } else if (percent >= 80) {
-      rankTitle = 'ĐẠI SƯ 9+';
-      rankWidth = `${percent}%`;
-    } else if (percent >= 50) {
-      rankTitle = 'CAO THỦ 8+';
-      rankWidth = `${percent}%`;
-    } else if (percent >= 20) {
-      rankTitle = 'CHIẾN BINH 7+';
-      rankWidth = `${percent}%`;
-    } else if (percent > 0) {
-      rankTitle = 'TÂN BINH';
-      rankWidth = '25%';
+    const note = $('accountProgressNote');
+    if (note) {
+      note.textContent = percent === 0
+        ? 'Bắt đầu luyện tập để mở khoá tiến độ.'
+        : `Còn ${Math.max(0, total - memorized)} công thức chưa thuộc. Giữ nhịp mỗi ngày nhé!`;
     }
 
-    if (hudMasteryRank) hudMasteryRank.textContent = rankTitle;
-    if (hudRankBar) hudRankBar.style.width = rankWidth;
+    const bar = $('accountProgressBar');
+    if (bar) bar.style.width = `${percent}%`;
 
-    // Backwards compatibility for old chart
-    const statCountText = document.getElementById('statCountText');
-    if (statCountText) statCountText.textContent = `${memorized} / ${total}`;
-    const percentText = document.getElementById('percentText');
-    if (percentText) percentText.textContent = `${percent}%`;
-    const circle = document.getElementById('circleProgress');
-    if (circle) circle.setAttribute('stroke-dasharray', `${percent}, 100`);
+    // Chip trên header = chuỗi đang có (tụt về 0 khi trả lời sai)
+    document.querySelectorAll('.js-streak').forEach((el) => { el.textContent = state.streak; });
   }
 
-  // ==========================================
-  // 8. FLASHCARD (SPACED REPETITION) MODULE
-  // ==========================================
-  const flashcardElement = document.getElementById('flashcardElement');
-  const fcCurrentIndex = document.getElementById('fcCurrentIndex');
-  const fcTotalCount = document.getElementById('fcTotalCount');
-  const fcProgressFill = document.getElementById('fcProgressFill');
-  const fcChapterSelect = document.getElementById('fcChapterSelect');
+  function bumpStreak() {
+    state.streak += 1;
+    if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+    localStorage.setItem(KEYS.STREAK, String(state.streak));
+    localStorage.setItem(KEYS.BEST, String(state.bestStreak));
+    updateProgress();
+  }
 
-  const fcFrontChapter = document.getElementById('fcFrontChapter');
-  const fcFrontTitle = document.getElementById('fcFrontTitle');
-  const fcFrontDesc = document.getElementById('fcFrontDesc');
+  function resetStreak() {
+    state.streak = 0;
+    localStorage.setItem(KEYS.STREAK, '0');
+    updateProgress();
+  }
 
-  const fcBackChapter = document.getElementById('fcBackChapter');
-  const fcBackMath = document.getElementById('fcBackMath');
-  const fcBackMnemonic = document.getElementById('fcBackMnemonic');
+  /* ==========================================================================
+     10. TAB FLASHCARD
+     ========================================================================== */
+  const flashcardEl = $('flashcardElement');
+  const fcChapterSelect = $('fcChapterSelect');
 
-  const fcPrevBtn = document.getElementById('fcPrevBtn');
-  const fcNextBtn = document.getElementById('fcNextBtn');
-  const fcFailBtn = document.getElementById('fcFailBtn');
-  const fcPassBtn = document.getElementById('fcPassBtn');
+  if (fcChapterSelect) {
+    CHAPTERS.forEach((chap) => {
+      if (chap.id === 'all') return;
+      const opt = document.createElement('option');
+      opt.value = chap.id;
+      opt.textContent = `${chap.icon} ${chap.name}`;
+      fcChapterSelect.appendChild(opt);
+    });
 
-  // Populate Flashcard Chapter Select
-  CHAPTERS.forEach(c => {
-    if (c.id === 'all') return;
-    const opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = `${c.icon} ${c.name}`;
-    fcChapterSelect.appendChild(opt);
-  });
+    fcChapterSelect.addEventListener('change', (e) => {
+      playSound('click');
+      loadFlashcards(e.target.value);
+    });
+  }
 
-  fcChapterSelect.addEventListener('change', (e) => {
-    playSound('click');
-    initFlashcards(e.target.value);
-  });
+  function initFlashcards() {
+    if (state.fcReady) return;
+    state.fcReady = true;
+    loadFlashcards(fcChapterSelect ? fcChapterSelect.value : 'all');
+  }
 
-  function initFlashcards(chapId = 'all') {
-    state.fcItems = FORMULAS_DATA.filter(f => chapId === 'all' || f.chapter === chapId);
+  function loadFlashcards(chapterId) {
+    state.fcItems = FORMULAS_DATA.filter((f) => chapterId === 'all' || f.chapter === chapterId);
     state.fcIndex = 0;
-    state.fcFlipped = false;
-    flashcardElement.classList.remove('flipped');
-    updateFlashcardView();
+    updateFlashcard();
   }
 
-  function updateFlashcardView() {
-    if (state.fcItems.length === 0) return;
+  function updateFlashcard() {
+    if (!state.fcItems.length || !flashcardEl) return;
     const item = state.fcItems[state.fcIndex];
 
-    fcCurrentIndex.textContent = state.fcIndex + 1;
-    fcTotalCount.textContent = state.fcItems.length;
+    const setText = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+    setText('fcCurrentIndex', state.fcIndex + 1);
+    setText('fcTotalCount', state.fcItems.length);
 
-    const progressPct = ((state.fcIndex + 1) / state.fcItems.length) * 100;
-    fcProgressFill.style.width = `${progressPct}%`;
+    const fill = $('fcProgressFill');
+    if (fill) fill.style.width = `${((state.fcIndex + 1) / state.fcItems.length) * 100}%`;
 
-    // Reset flipped state
-    state.fcFlipped = false;
-    flashcardElement.classList.remove('flipped');
+    flashcardEl.classList.remove('flipped');
 
-    // Populate Front
-    fcFrontChapter.textContent = item.chapterName;
-    fcFrontTitle.innerHTML = item.title;
-    fcFrontDesc.innerHTML = item.desc;
+    setText('fcFrontChapter', item.chapterName);
+    setText('fcBackChapter', item.chapterName);
 
-    // Populate Back
-    fcBackChapter.textContent = item.chapterName;
-    fcBackMath.innerHTML = `$$${item.latex}$$`;
-    fcBackMnemonic.innerHTML = item.mnemonic ? `<strong>${item.mnemonic}</strong>` : '💡 Cố gắng luyện tập nhớ các hệ số!';
+    const title = $('fcFrontTitle');
+    if (title) title.innerHTML = item.title;
+    const desc = $('fcFrontDesc');
+    if (desc) desc.innerHTML = item.desc;
 
-    renderAllMath(flashcardElement);
+    const math = $('fcBackMath');
+    if (math) math.innerHTML = `$$${item.latex}$$`;
+
+    const mnemonic = $('fcBackMnemonic');
+    if (mnemonic) {
+      const text = stripMnemonicPrefix(item.mnemonic);
+      mnemonic.innerHTML = text
+        ? `<span class="callout-label">💡 Mẹo nhớ nhanh:</span><p>${text}</p>`
+        : '<span class="callout-label">💡 Gợi ý</span><p>Tự nhẩm lại các hệ số trước khi lật thẻ.</p>';
+    }
+
+    renderMath(flashcardEl, true);
   }
 
-  let isSwiping = false;
+  let swiping = false;
 
   function flipFlashcard() {
-    if (isSwiping) return;
+    if (swiping || !flashcardEl) return;
     playSound('flip');
-    state.fcFlipped = !state.fcFlipped;
-    flashcardElement.classList.toggle('flipped', state.fcFlipped);
-  }
-
-  flashcardElement.addEventListener('click', flipFlashcard);
-
-  // Keyboard navigation for Flashcards (Desktop accessibility)
-  window.addEventListener('keydown', (e) => {
-    if (state.activeTab !== 'paneFlashcard') return;
-    if (e.code === 'Space') {
-      e.preventDefault();
-      flipFlashcard();
-    } else if (e.code === 'ArrowRight') {
-      e.preventDefault();
-      nextFlashcard();
-    } else if (e.code === 'ArrowLeft') {
-      e.preventDefault();
-      prevFlashcard();
-    }
-  });
-
-  // Touch Swipe Gesture on Flashcards for Mobile (Ergonomic Touch Detection)
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let touchEndX = 0;
-  let touchEndY = 0;
-
-  flashcardElement.addEventListener('touchstart', (e) => {
-    if (e.touches && e.touches[0]) {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-    }
-  }, { passive: true });
-
-  flashcardElement.addEventListener('touchend', (e) => {
-    if (e.changedTouches && e.changedTouches[0]) {
-      touchEndX = e.changedTouches[0].clientX;
-      touchEndY = e.changedTouches[0].clientY;
-      handleSwipe();
-    }
-  }, { passive: true });
-
-  function handleSwipe() {
-    const diffX = touchEndX - touchStartX;
-    const diffY = touchEndY - touchStartY;
-    // Trigger only if horizontal swipe dominates vertical scrolling
-    if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
-      isSwiping = true;
-      if (diffX < 0) {
-        nextFlashcard(); // swipe left -> next card
-      } else {
-        prevFlashcard(); // swipe right -> prev card
-      }
-      setTimeout(() => { isSwiping = false; }, 260);
-    }
+    flashcardEl.classList.toggle('flipped');
   }
 
   function nextFlashcard() {
     if (state.fcIndex < state.fcItems.length - 1) {
       playSound('click');
-      state.fcIndex++;
-      updateFlashcardView();
+      state.fcIndex += 1;
+      updateFlashcard();
     } else {
-      showToast('🎉 Đã xem hết toàn bộ thẻ của chương này!');
+      showToast('Đã xem hết thẻ của chương này');
     }
   }
 
   function prevFlashcard() {
     if (state.fcIndex > 0) {
       playSound('click');
-      state.fcIndex--;
-      updateFlashcardView();
+      state.fcIndex -= 1;
+      updateFlashcard();
     }
   }
 
-  fcNextBtn.addEventListener('click', nextFlashcard);
-  fcPrevBtn.addEventListener('click', prevFlashcard);
+  if (flashcardEl) {
+    flashcardEl.addEventListener('click', flipFlashcard);
 
-  fcFailBtn.addEventListener('click', () => {
-    const current = state.fcItems[state.fcIndex];
-    state.memorizedIds.delete(current.id);
-    localStorage.setItem(STORAGE_KEYS.MEMORIZED, JSON.stringify([...state.memorizedIds]));
-    playSound('fail');
-    showToast('Đã đánh dấu: Cần ôn lại thẻ này');
-    updateCounts();
-    nextFlashcard();
-  });
-
-  fcPassBtn.addEventListener('click', () => {
-    const current = state.fcItems[state.fcIndex];
-    state.memorizedIds.add(current.id);
-    localStorage.setItem(STORAGE_KEYS.MEMORIZED, JSON.stringify([...state.memorizedIds]));
-    playSound('success');
-    showToast('✅ Tuyệt vời! Đã thuộc thẻ này');
-    updateCounts();
-    nextFlashcard();
-  });
-
-  // ==========================================
-  // 9. QUIZ / TRẮC NGHIỆM TRÍ NHỚ MODULE
-  // ==========================================
-  const quizStreakCount = document.getElementById('quizStreakCount');
-  const quizScoreCount = document.getElementById('quizScoreCount');
-  const quizChapterTag = document.getElementById('quizChapterTag');
-  const quizIndexText = document.getElementById('quizIndexText');
-  const quizQuestionText = document.getElementById('quizQuestionText');
-  const quizOptionsContainer = document.getElementById('quizOptionsContainer');
-  const quizExplainBox = document.getElementById('quizExplainBox');
-  const explainContent = document.getElementById('explainContent');
-  const quizNextBtn = document.getElementById('quizNextBtn');
-  const quizRestartBtn = document.getElementById('quizRestartBtn');
-
-  function initQuiz() {
-    // Shuffle formulas that have quiz questions
-    state.quizList = FORMULAS_DATA.filter(f => f.quiz).sort(() => Math.random() - 0.5);
-    state.quizIndex = 0;
-    state.quizScore = 0;
-    state.quizAnswered = false;
-    quizStreakCount.textContent = state.quizStreak;
-    quizScoreCount.textContent = '0';
-    renderQuizCard();
-  }
-
-  function renderQuizCard() {
-    if (state.quizList.length === 0) return;
-    state.quizAnswered = false;
-    quizExplainBox.style.display = 'none';
-
-    const item = state.quizList[state.quizIndex];
-    const quiz = item.quiz;
-
-    quizChapterTag.textContent = item.chapterName;
-    quizIndexText.textContent = `Câu ${state.quizIndex + 1} / ${state.quizList.length}`;
-    quizQuestionText.innerHTML = quiz.q.includes('$') ? quiz.q : (quiz.q.includes('\\') ? `$${quiz.q}$` : quiz.q);
-
-    quizOptionsContainer.innerHTML = '';
-    const letters = ['A', 'B', 'C', 'D'];
-
-    quiz.options.forEach((opt, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'quiz-opt-btn';
-      btn.innerHTML = `
-        <span class="opt-prefix">${letters[idx]}</span>
-        <span class="opt-text">${formatQuizOption(opt)}</span>
-      `;
-
-      btn.addEventListener('click', () => {
-        if (state.quizAnswered) return;
-        handleQuizAnswer(idx, quiz.correct, btn, quiz.explain);
-      });
-
-      quizOptionsContainer.appendChild(btn);
+    const KEY_SPACE = ' ';
+    flashcardEl.addEventListener('keydown', (e) => {
+      if (e.key === KEY_SPACE || e.key === 'Enter') {
+        e.preventDefault();
+        flipFlashcard();
+      }
     });
 
-    renderAllMath(document.getElementById('quizCard'));
+    let startX = 0;
+    let startY = 0;
+
+    flashcardEl.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      if (!t) return;
+      startX = t.clientX;
+      startY = t.clientY;
+    }, { passive: true });
+
+    flashcardEl.addEventListener('touchend', (e) => {
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+        swiping = true;
+        if (dx < 0) nextFlashcard();
+        else prevFlashcard();
+        setTimeout(() => { swiping = false; }, 280);
+      }
+    }, { passive: true });
+  }
+
+  const fcPrevBtn = $('fcPrevBtn');
+  const fcNextBtn = $('fcNextBtn');
+  const fcFailBtn = $('fcFailBtn');
+  const fcPassBtn = $('fcPassBtn');
+  if (fcPrevBtn) fcPrevBtn.addEventListener('click', prevFlashcard);
+  if (fcNextBtn) fcNextBtn.addEventListener('click', nextFlashcard);
+
+  function markFlashcard(memorized) {
+    const item = state.fcItems[state.fcIndex];
+    if (!item) return;
+    if (memorized) {
+      state.memorizedIds.add(item.id);
+      playSound('success');
+      showToast('Đã đánh dấu: Đã thuộc');
+    } else {
+      state.memorizedIds.delete(item.id);
+      playSound('fail');
+      showToast('Sẽ ôn lại thẻ này');
+    }
+    writeSet(KEYS.MEMORIZED, state.memorizedIds);
+    updateProgress();
+    nextFlashcard();
+  }
+  if (fcPassBtn) fcPassBtn.addEventListener('click', () => markFlashcard(true));
+  if (fcFailBtn) fcFailBtn.addEventListener('click', () => markFlashcard(false));
+
+  /* ==========================================================================
+     11. TAB LUYỆN TẬP
+     ========================================================================== */
+  const quizOptionsContainer = $('quizOptionsContainer');
+  const quizQuestionText = $('quizQuestionText');
+  const quizChapterTag = $('quizChapterTag');
+  const quizIndexText = $('quizIndexText');
+  const quizExplainBox = $('quizExplainBox');
+  const explainContent = $('explainContent');
+  const quizTimer = $('quizTimer');
+  const quizTimerBar = $('quizTimerBar');
+  let quizTimerId = null;
+
+  function stopQuizTimer() {
+    if (quizTimerId) {
+      clearInterval(quizTimerId);
+      quizTimerId = null;
+    }
+  }
+
+  function startQuizTimer(onTimeout) {
+    stopQuizTimer();
+    const total = QUIZ_SECONDS * 1000;
+    let left = total;
+
+    if (quizTimer) quizTimer.classList.remove('is-urgent', 'is-done');
+    if (quizTimerBar) quizTimerBar.style.width = '100%';
+
+    quizTimerId = setInterval(() => {
+      left -= 100;
+      const percent = Math.max(0, (left / total) * 100);
+      if (quizTimerBar) quizTimerBar.style.width = `${percent}%`;
+      if (quizTimer) quizTimer.classList.toggle('is-urgent', percent <= 35);
+      if (left <= 0) {
+        stopQuizTimer();
+        if (quizTimer) quizTimer.classList.add('is-done');
+        onTimeout();
+      }
+    }, 100);
+  }
+
+  function initQuiz() {
+    if (state.quizReady) return;
+    state.quizReady = true;
+    newQuizRound();
+  }
+
+  function newQuizRound() {
+    state.quizList = FORMULAS_DATA.filter((f) => f.quiz && f.quiz.options && f.quiz.options.length >= 2);
+    // Fisher–Yates: trộn đều hơn sort(random) và không lệ thuộc engine sort
+    for (let i = state.quizList.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [state.quizList[i], state.quizList[j]] = [state.quizList[j], state.quizList[i]];
+    }
+    state.quizIndex = 0;
+    state.quizScore = 0;
+    const scoreEl = $('quizScoreCount');
+    if (scoreEl) scoreEl.textContent = '0';
+    renderQuizQuestion();
   }
 
   function formatQuizOption(opt) {
     if (!opt) return '';
     if (opt.includes('$')) return opt;
     const hasVietnamese = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]/i.test(opt);
-    if (hasVietnamese) {
-      if (opt.includes('\\text{')) return `$${opt}$`;
-      return opt;
-    }
+    if (hasVietnamese && !opt.includes('\\text{')) return escHtml(opt);
     return `$${opt}$`;
   }
 
-  function handleQuizAnswer(selectedIdx, correctIdx, selectedBtn, explanation) {
-    state.quizAnswered = true;
-    const allOptBtns = quizOptionsContainer.querySelectorAll('.quiz-opt-btn');
+  function renderQuizQuestion() {
+    if (!state.quizList.length) return;
+    state.quizAnswered = false;
+    if (quizExplainBox) quizExplainBox.hidden = true;
 
-    if (selectedIdx === correctIdx) {
+    const item = state.quizList[state.quizIndex];
+    const quiz = item.quiz;
+
+    if (quizChapterTag) quizChapterTag.textContent = item.chapterName;
+    if (quizIndexText) quizIndexText.textContent = `Câu ${state.quizIndex + 1}/${state.quizList.length}`;
+
+    const fill = $('quizProgressFill');
+    if (fill) fill.style.width = `${((state.quizIndex + 1) / state.quizList.length) * 100}%`;
+
+    if (quizQuestionText) {
+      const q = quiz.q || '';
+      quizQuestionText.innerHTML = q.includes('$') || !q.includes('\\') ? q : `$${q}$`;
+    }
+
+    if (quizOptionsContainer) {
+      quizOptionsContainer.innerHTML = quiz.options.map((opt, idx) => `
+        <button class="option-btn" type="button" data-index="${idx}">
+          <span class="option-key">${LETTERS[idx] || idx + 1}</span>
+          <span class="option-text">${formatQuizOption(opt)}</span>
+        </button>`).join('');
+    }
+
+    renderMath(quizOptionsContainer, true);
+    startQuizTimer(handleQuizTimeout);
+  }
+
+  function revealQuizAnswer(chosenIndex, correctIndex, explanation) {
+    if (quizOptionsContainer) {
+      quizOptionsContainer.querySelectorAll('.option-btn').forEach((btn) => {
+        const idx = Number(btn.dataset.index);
+        btn.disabled = true;
+        if (idx === correctIndex) btn.classList.add('is-correct');
+        else if (idx === chosenIndex) btn.classList.add('is-wrong');
+        else btn.classList.add('is-dim');
+      });
+    }
+
+    if (explainContent) explainContent.innerHTML = explanation || 'Xem lại công thức tương ứng trong sổ tay.';
+    if (quizExplainBox) quizExplainBox.hidden = false;
+    renderMath(quizExplainBox, true);
+  }
+
+  function handleQuizAnswer(button) {
+    if (state.quizAnswered) return;
+    state.quizAnswered = true;
+    stopQuizTimer();
+
+    const item = state.quizList[state.quizIndex];
+    const chosen = Number(button.dataset.index);
+    const correct = item.quiz.correct;
+
+    if (chosen === correct) {
       playSound('success');
-      selectedBtn.classList.add('correct');
       state.quizScore += 10;
-      state.quizStreak += 1;
-      quizScoreCount.textContent = state.quizScore;
-      quizStreakCount.textContent = state.quizStreak;
-      localStorage.setItem(STORAGE_KEYS.STREAK, state.quizStreak);
-      showToast('🔥 Chính xác! +10 điểm!');
+      bumpStreak();
+      const scoreEl = $('quizScoreCount');
+      if (scoreEl) scoreEl.textContent = state.quizScore;
+      showToast('Chính xác! +10 điểm');
     } else {
       playSound('fail');
-      selectedBtn.classList.add('wrong');
-      allOptBtns[correctIdx].classList.add('correct');
-      state.quizStreak = 0;
-      quizStreakCount.textContent = '0';
-      localStorage.setItem(STORAGE_KEYS.STREAK, '0');
-      showToast('Rất tiếc! Chưa chính xác');
+      resetStreak();
+      showToast('Chưa đúng — xem lời giải bên dưới');
     }
 
-    // Show Explanation
-    explainContent.innerHTML = explanation;
-    quizExplainBox.style.display = 'block';
-    renderAllMath(quizExplainBox);
+    revealQuizAnswer(chosen, correct, item.quiz.explain);
   }
 
-  quizNextBtn.addEventListener('click', () => {
-    playSound('click');
-    if (state.quizIndex < state.quizList.length - 1) {
-      state.quizIndex++;
-      renderQuizCard();
-    } else {
-      showToast(`🏆 Bạn đã hoàn thành bài thi! Tổng điểm: ${state.quizScore}`);
-      initQuiz();
-    }
-  });
+  function handleQuizTimeout() {
+    if (state.quizAnswered) return;
+    state.quizAnswered = true;
+    const item = state.quizList[state.quizIndex];
+    playSound('fail');
+    resetStreak();
+    showToast(`Hết ${QUIZ_SECONDS} giây!`);
+    revealQuizAnswer(-1, item.quiz.correct, item.quiz.explain);
+  }
 
-  quizRestartBtn.addEventListener('click', () => {
-    playSound('click');
-    initQuiz();
-    showToast('Đã tạo bài luyện tập trắc nghiệm mới!');
-  });
-
-  // ==========================================
-  // 10. DEPLOY GUIDE & DATA ACTIONS
-  // ==========================================
-  const copyGitCmdBtn = document.getElementById('copyGitCmdBtn');
-  if (copyGitCmdBtn) {
-    copyGitCmdBtn.addEventListener('click', () => {
-      const gitCmds = `git init\ngit add .\ngit commit -m "Full Cong Thuc Toan 12 App"\ngit branch -M main\ngit remote add origin https://github.com/YOUR_USERNAME/toan12-formula.git\ngit push -u origin main`;
-      copyToClipboard(gitCmds, '📋 Đã sao chép các dòng lệnh Git!');
+  if (quizOptionsContainer) {
+    quizOptionsContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.option-btn');
+      if (btn) handleQuizAnswer(btn);
     });
   }
 
-  const exportDataBtn = document.getElementById('exportDataBtn');
-  if (exportDataBtn) {
-    exportDataBtn.addEventListener('click', () => {
-      const backup = {
-        memorized: [...state.memorizedIds],
-        bookmarked: [...state.bookmarkedIds],
-        streak: state.quizStreak,
-        exportedAt: new Date().toISOString()
-      };
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `toan12_tien_do_${new Date().toLocaleDateString('vi-VN').replace(/\\//g, '-')}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      playSound('success');
-      showToast('📥 Đã tải file sao lưu tiến độ!');
-    });
-  }
-
-  const resetAllDataBtn = document.getElementById('resetAllDataBtn');
-  if (resetAllDataBtn) {
-    resetAllDataBtn.addEventListener('click', () => {
-      if (confirm('Bạn có chắc chắn muốn xóa toàn bộ tiến độ đã thuộc để học lại từ đầu không?')) {
-        state.memorizedIds.clear();
-        state.bookmarkedIds.clear();
-        state.quizStreak = 0;
-        localStorage.removeItem(STORAGE_KEYS.MEMORIZED);
-        localStorage.removeItem(STORAGE_KEYS.BOOKMARKED);
-        localStorage.removeItem(STORAGE_KEYS.STREAK);
-        playSound('click');
-        renderHandbookList();
-        showToast('Đã làm mới toàn bộ tiến độ!');
-      }
-    });
-  }
-
-  // ==========================================
-  // 11. CYBER MATRIX CANVAS & HERO INTERACTIONS
-  // ==========================================
-  const heroStartPracticeBtn = document.getElementById('heroStartPracticeBtn');
-  if (heroStartPracticeBtn) {
-    heroStartPracticeBtn.addEventListener('click', () => {
+  const quizNextBtn = $('quizNextBtn');
+  if (quizNextBtn) {
+    quizNextBtn.addEventListener('click', () => {
       playSound('click');
-      switchTab('paneFlashcard');
+      if (state.quizIndex < state.quizList.length - 1) {
+        state.quizIndex += 1;
+        renderQuizQuestion();
+      } else {
+        showToast(`Hoàn thành! Tổng điểm: ${state.quizScore}`);
+        newQuizRound();
+      }
     });
   }
 
-  const heroFilterKeyBtn = document.getElementById('heroFilterKeyBtn');
-  if (heroFilterKeyBtn) {
-    heroFilterKeyBtn.addEventListener('click', () => {
+  const quizRestartBtn = $('quizRestartBtn');
+  if (quizRestartBtn) {
+    quizRestartBtn.addEventListener('click', () => {
       playSound('click');
-      state.searchQuery = 'cực trị';
-      searchInput.value = 'cực trị';
-      clearSearchBtn.style.display = 'block';
-      renderHandbookList();
-      showToast('⚡ Đã lọc ma trận công thức trọng tâm 9+');
+      newQuizRound();
+      showToast('Đã tạo đề luyện tập mới');
     });
   }
 
-  function initCyberMathCanvas() {
-    const canvas = document.getElementById('mathMatrixCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  /* ==========================================================================
+     12. TAB REELS
+     ========================================================================== */
+  const reelsFeed = $('reelsFeed');
+  const reelsChapterSelect = $('reelsChapterSelect');
+  const reelsHint = $('reelsHint');
 
-    let width = 0;
-    let height = 0;
-    let particles = [];
-    const glyphs = [
-      '∫', '∑', 'lim', 'π', 'Δ', '∇', '∞', "f'(x)", 'dx', 'λ', 'θ', '√x',
-      'e^{iπ}', 'Oxyz', 'd(M,(P))', 'V=Bh/3', 'u⃗ × v⃗', 'log_a(b)', 'sin²x'
-    ];
-
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      width = canvas.width = rect.width || canvas.offsetWidth || 800;
-      height = canvas.height = rect.height || canvas.offsetHeight || 300;
-    }
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    class MathParticle {
-      constructor() {
-        this.reset(true);
-      }
-      reset(init = false) {
-        this.x = Math.random() * (width || 800);
-        this.y = init ? Math.random() * (height || 300) : (height || 300) + 15;
-        this.glyph = glyphs[Math.floor(Math.random() * glyphs.length)];
-        this.size = Math.random() * 10 + 11; // 11px to 21px
-        this.speedY = Math.random() * 0.4 + 0.15;
-        this.speedX = (Math.random() - 0.5) * 0.25;
-        this.alpha = Math.random() * 0.35 + 0.12;
-        this.color = Math.random() > 0.4 ? 'rgba(0, 242, 254, ' : 'rgba(168, 85, 247, ';
-      }
-      update() {
-        this.y -= this.speedY;
-        this.x += this.speedX;
-        if (this.y < -25 || this.x < -25 || this.x > width + 25) {
-          this.reset(false);
-        }
-      }
-      draw() {
-        ctx.save();
-        ctx.font = `600 ${this.size}px "Outfit", "Space Grotesk", sans-serif`;
-        ctx.fillStyle = this.color + this.alpha + ')';
-        ctx.shadowColor = 'rgba(0, 242, 254, 0.4)';
-        ctx.shadowBlur = 6;
-        ctx.fillText(this.glyph, this.x, this.y);
-        ctx.restore();
-      }
-    }
-
-    const count = Math.min(Math.floor((width || 800) / 28), 35);
-    particles = Array.from({ length: count }, () => new MathParticle());
-
-    function animate() {
-      ctx.clearRect(0, 0, width, height);
-      for (let i = 0; i < particles.length; i++) {
-        particles[i].update();
-        particles[i].draw();
-      }
-      requestAnimationFrame(animate);
-    }
-    requestAnimationFrame(animate);
-  }
-
-  // ==========================================
-  // 12. MATH REELS (TIKTOK / DOOMSCROLL FEED ENGINE)
-  // ==========================================
-  const reelsFeed = document.getElementById('reelsFeed');
-  const dopamineFillBar = document.getElementById('dopamineFillBar');
-  const dopamineMultiplier = document.getElementById('dopamineMultiplier');
-  const feverModeBanner = document.getElementById('feverModeBanner');
-  const reelsChapterSelect = document.getElementById('reelsChapterSelect');
-  const reelsCommentDrawer = document.getElementById('reelsCommentDrawer');
-  const drawerCloseBtn = document.getElementById('drawerCloseBtn');
-  const drawerBackdrop = document.getElementById('drawerBackdrop');
-  const drawerFormulaName = document.getElementById('drawerFormulaName');
-  const drawerCommentsStream = document.getElementById('drawerCommentsStream');
-  const commentSubmitForm = document.getElementById('commentSubmitForm');
-  const commentInputField = document.getElementById('commentInputField');
-
-  const storyExportModal = document.getElementById('storyExportModal');
-  const storyBackdrop = document.getElementById('storyBackdrop');
-  const storyCloseBtn = document.getElementById('storyCloseBtn');
-  const storyCardContainer = document.getElementById('storyCardContainer');
-  const storySaveBtn = document.getElementById('storySaveBtn');
-
-  // Reels Engine State
   const reelsState = {
-    initialized: false,
-    currentChapter: 'all',
+    ready: false,
+    chapter: 'all',
     deck: [],
-    dopamineScore: 25,
-    combo: 1,
-    isFever: false,
-    feverTimeout: null,
-    activeFormulaForDrawer: null,
-    activeFormulaForStory: null,
-    lofiPlaying: false,
+    lofiOn: false,
     lofiInterval: null,
-    reflexTimers: {}
+    lofiNodes: null,
+    reflexTimers: Object.create(null),
+    activeFormula: null,
+    activeTitle: ''
   };
 
-  // Preloaded spicy & funny Gen Z comments
-  const DEFAULT_GENZ_COMMENTS = [
-    { author: "Quân 2k7 (Hà Nội)", text: "Học thuộc cái này xong đi thi gặp đề Bộ vẫn ngáo ngơ 😭", time: "Vừa xong" },
-    { author: "Hương Mai (Chuyên Toán)", text: "Nhớ mẹo này tiết kiệm được 2 phút câu 38 nè các bác ơi!", time: "2 phút trước" },
-    { author: "Tuấn Anh (Thủ khoa hụt)", text: "Bấm Casio 5 giây ra luôn, ai rảnh đâu mà đạo hàm tay haha", time: "15 phút trước" },
-    { author: "Linh Đan", text: "Đã xem lúc 2h sáng, mai thi rồi cứu con với cụ tổ ơi 🙏", time: "1 giờ trước" },
-    { author: "Đức Minh", text: "Bẫy lừa này năm ngoái anh suýt rớt tốt nghiệp, lưu gấp anh em ơi!", time: "3 giờ trước" }
+  const TRAP_CARDS = [
+    {
+      id: 'trap-log',
+      chapter: 'mu-logarit',
+      chapterName: 'Mũ & Logarit',
+      title: 'Hạ số mũ chẵn mà quên trị tuyệt đối',
+      latex: '\\log_a(x^2) = 2\\log_a |x| \\quad (x \\neq 0)',
+      trap: '$\\log_a(x^2) = 2\\log_a x$',
+      fix: 'Số mũ chẵn khi hạ xuống phải kèm dấu giá trị tuyệt đối nếu chưa biết dấu của $x$.',
+      mnemonic: 'Hạ mũ chẵn thì đội ngay trị tuyệt đối.'
+    },
+    {
+      id: 'trap-monotonic',
+      chapter: 'ham-so',
+      chapterName: 'Khảo sát hàm số',
+      title: 'Kết luận khoảng đơn điệu bằng ký hiệu hợp',
+      latex: 'y = \\frac{2x-1}{x+1} \\quad ; \\quad y\' = \\frac{3}{(x+1)^2} > 0',
+      trap: 'Hàm số đồng biến trên $\\mathbb{R} \\setminus \\{-1\\}$ hoặc trên $(-\\infty;-1) \\cup (-1;+\\infty)$',
+      fix: 'Phải kết luận trên <b>từng khoảng</b>: đồng biến trên $(-\\infty;-1)$ và trên $(-1;+\\infty)$.',
+      mnemonic: 'Khoảng đơn điệu thì nối bằng chữ "và", tuyệt đối không dùng dấu hợp.'
+    },
+    {
+      id: 'trap-oxyz-angle',
+      chapter: 'oxyz',
+      chapterName: 'Tọa độ Oxyz',
+      title: 'Góc giữa hai đường thẳng mà quên trị tuyệt đối',
+      latex: '\\cos(d_1, d_2) = \\frac{|\\vec{u_1} \\cdot \\vec{u_2}|}{|\\vec{u_1}| \\cdot |\\vec{u_2}|} \\ge 0',
+      trap: 'Bỏ dấu giá trị tuyệt đối ở tử số khi tính góc giữa hai đường thẳng.',
+      fix: 'Góc giữa hai đường thẳng luôn trong $[0^\\circ; 90^\\circ]$ nên cosin luôn không âm. Góc giữa hai vectơ thì có thể tù.',
+      mnemonic: 'Đường thẳng có trị tuyệt đối, vectơ thì không.'
+    }
   ];
 
-  function initReelsFeed() {
-    if (!reelsFeed) return;
-
-    const streakCountEl = document.getElementById('reelsStreakCount');
-    if (streakCountEl) {
-      streakCountEl.textContent = state.quizStreak || 1;
+  const CASIO_CARDS = [
+    {
+      id: 'casio-table',
+      chapterName: 'Tuyệt kỹ Casio',
+      title: 'Bảng giá trị TABLE để quét cực trị và max–min',
+      latex: '\\text{MENU 8 (TABLE)} \\rightarrow f(x) \\rightarrow \\text{Start } a,\\ \\text{End } b,\\ \\text{Step } \\frac{b-a}{29}',
+      desc: 'Quét nhanh bảng giá trị để tìm giá trị lớn nhất, nhỏ nhất và số nghiệm phương trình.',
+      mnemonic: 'Chọn Step = (Cuối − Đầu) ÷ 29 để bắt trọn điểm rơi.'
+    },
+    {
+      id: 'casio-derivative',
+      chapterName: 'Tuyệt kỹ Casio',
+      title: 'Chống nguyên hàm bằng phím đạo hàm',
+      latex: '\\frac{d}{dx}\\Big(F(x)\\Big)\\Big|_{x=x_0} - f(x_0) = 0',
+      desc: 'Lấy đạo hàm của từng đáp án tại $x_0$ rồi trừ đi đề bài. Đáp án nào cho kết quả 0 là đáp án đúng.',
+      mnemonic: 'Đạo hàm đáp án trừ đề bài, bằng 0 thì khoanh ngay.'
     }
+  ];
 
-    // Populate Chapter Filter dropdown if not done
+  function initReels() {
+    if (reelsState.ready) {
+      // Card chưa kịp render công thức (ví dụ KaTeX vừa tải xong) sẽ được
+      // IntersectionObserver xử lý khi quay lại tab.
+      return;
+    }
+    reelsState.ready = true;
+
     if (reelsChapterSelect && reelsChapterSelect.options.length <= 1) {
-      CHAPTERS.forEach(c => {
-        if (c.id === 'all') return;
+      CHAPTERS.forEach((chap) => {
+        if (chap.id === 'all') return;
         const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = `${c.icon} ${c.name}`;
+        opt.value = chap.id;
+        opt.textContent = `${chap.icon} ${chap.name}`;
         reelsChapterSelect.appendChild(opt);
       });
 
       reelsChapterSelect.addEventListener('change', (e) => {
         playSound('click');
-        reelsState.currentChapter = e.target.value;
+        reelsState.chapter = e.target.value;
         buildReelsDeck();
       });
     }
 
-    if (!reelsState.initialized) {
-      reelsState.initialized = true;
-      buildReelsDeck();
-      setupReelsInteractions();
-    }
+    if (localStorage.getItem(KEYS.REELS_SEEN) === '1' && reelsHint) reelsHint.classList.add('is-hidden');
+
+    buildReelsDeck();
+    bindReelsInteractions();
   }
 
-  // Build Deck with Formulas + Injected Boss Cards + Reflex Challenges + Casio Tricks
-  function buildReelsDeck() {
-    let sourceFormulas = FORMULAS_DATA.filter(f => reelsState.currentChapter === 'all' || f.chapter === reelsState.currentChapter);
-    if (sourceFormulas.length === 0) sourceFormulas = FORMULAS_DATA;
+  function makeDeckItem(type, data) {
+    return Object.assign({
+      type,
+      likes: 800 + Math.floor(Math.random() * 9200),
+      commentsCount: 40 + Math.floor(Math.random() * 320)
+    }, data);
+  }
 
+  function buildReelsDeck() {
+    const source = FORMULAS_DATA.filter((f) => reelsState.chapter === 'all' || f.chapter === reelsState.chapter);
+    const formulas = source.length ? source : FORMULAS_DATA;
     const deck = [];
 
-    sourceFormulas.forEach((f, idx) => {
-      // 1. Standard Formula Card
-      deck.push({
-        type: 'formula',
+    formulas.forEach((f, idx) => {
+      deck.push(makeDeckItem('formula', {
         id: f.id,
         chapterName: f.chapterName,
         title: f.title,
         latex: f.latex,
         desc: f.desc,
-        mnemonic: f.mnemonic,
-        tier: (idx % 3 === 0) ? 'boss' : (idx % 2 === 0 ? 'adv' : 'basic'),
-        likes: 1200 + Math.floor(Math.random() * 8500),
-        commentsCount: 20 + Math.floor(Math.random() * 300)
-      });
+        mnemonic: f.mnemonic
+      }));
 
-      // 2. Inject BOSS TRAP CARD every 4th item
+      // Bẫy: chỉ chèn card cùng chuyên đề với bài đang xem
       if (idx % 4 === 1) {
-        deck.push(createSpecialTrapCard(idx));
+        const matching = TRAP_CARDS.filter((t) => t.chapter === f.chapter);
+        const candidates = matching.length
+          ? matching
+          : (reelsState.chapter === 'all' ? TRAP_CARDS : []);
+        if (candidates.length) {
+          const trap = candidates[Math.floor(idx / 4) % candidates.length];
+          deck.push(makeDeckItem('trap', Object.assign({}, trap, {
+            id: `${trap.id}-${idx}`,
+            likes: 9000 + Math.floor(Math.random() * 6000)
+          })));
+        }
       }
 
-      // 3. Inject 5-SECOND REFLEX CHALLENGE every 4th item
-      if (idx % 4 === 2) {
-        deck.push(createReflexChallengeCard(f, idx));
+      if (idx % 4 === 2 && f.quiz && f.quiz.options && f.quiz.options.length >= 2) {
+        deck.push(makeDeckItem('reflex', {
+          id: `reflex-${f.id}`,
+          chapterName: f.chapterName,
+          title: f.title,
+          question: f.quiz.q,
+          options: f.quiz.options.slice(0, 4),
+          correct: f.quiz.correct,
+          explain: f.quiz.explain
+        }));
       }
 
-      // 4. Inject CASIO TRICK every 4th item
       if (idx % 4 === 3) {
-        deck.push(createCasioTrickCard(idx));
+        const casio = CASIO_CARDS[Math.floor(idx / 4) % CASIO_CARDS.length];
+        deck.push(makeDeckItem('casio', Object.assign({}, casio, { id: `${casio.id}-${idx}` })));
       }
+    });
+
+    // Dọn interval của bộ bài cũ trước khi dựng bộ mới (tránh rò rỉ timer)
+    Object.keys(reelsState.reflexTimers).forEach((key) => {
+      const timer = reelsState.reflexTimers[key];
+      if (typeof timer === 'number') clearInterval(timer);
     });
 
     reelsState.deck = deck;
-    renderReelsFeed();
+    reelsState.reflexTimers = Object.create(null);
+    renderReels();
   }
 
-  function createSpecialTrapCard(idx) {
-    const traps = [
-      {
-        id: `trap-log-${idx}`,
-        chapterName: '⚡ Mũ & Logarit',
-        title: '💀 BẪY TỬ THẦN: QUÊN GIÁ TRỊ TUYỆT ĐỐI',
-        latex: '\\log_a(x^2) = 2\\log_a |x| \\quad (x \\neq 0)',
-        wrong: '❌ 95% SĨ TỬ VIẾT: \\log_a(x^2) = 2\\log_a x ➔ SAI BÉT VÌ THIẾU TRỊ TUYỆT ĐỐI!',
-        right: '✅ ĐÚNG: Số mũ chẵn hạ xuống PHẢI CÓ GIÁ TRỊ TUYỆT ĐỐI nếu x chưa biết dấu.',
-        mnemonic: '💡 Khẩu quyết: "Hạ mũ chẵn đội ngay trị tuyệt đối, quên là mất điểm đại học!"',
-        likes: 8920,
-        commentsCount: 420
-      },
-      {
-        id: `trap-ham-${idx}`,
-        chapterName: '📈 Khảo Sát Hàm Số',
-        title: '💀 BẪY BỘ GD: KẾT LUẬN KHOẢNG ĐỒNG BIẾN',
-        latex: 'y = \\frac{2x-1}{x+1} \\quad ; \\quad y\' = \\frac{3}{(x+1)^2} > 0',
-        wrong: '❌ GHI: "Hàm số đồng biến trên ℝ \\ {-1}" hoặc "trên (-∞; -1) VÀ (-1; +∞)" ➔ 0 ĐIỂM!',
-        right: '✅ ĐÚNG: Hàm số đồng biến trên TỪNG KHOẢNG (-∞; -1) VÀ (-1; +∞) (không dùng ký hiệu hợp hoặc \\).',
-        mnemonic: '💡 Mẹo nhớ: Tuyệt đối không dùng dấu ∪ hay \\ khi kết luận khoảng đơn điệu!',
-        likes: 12400,
-        commentsCount: 650
-      },
-      {
-        id: `trap-oxyz-${idx}`,
-        chapterName: '🌐 Tọa Độ Oxyz',
-        title: '💀 BẪY OXYZ: GÓC GIỮA 2 ĐƯỜNG THẲNG VS 2 VECTƠ',
-        latex: '\\cos(d_1, d_2) = \\frac{|\\vec{u_1} \\cdot \\vec{u_2}|}{|\\vec{u_1}| \\cdot |\\vec{u_2}|} \\ge 0',
-        wrong: '❌ LỖI KINH ĐIỂN: Tính góc giữa 2 đường thẳng mà quên đóng dấu giá trị tuyệt đối ở tử số!',
-        right: '✅ ĐÚNG: Góc giữa 2 đường thẳng luôn từ 0° đến 90° (Cos luôn ≥ 0). Còn góc 2 vectơ thì có thể tù.',
-        mnemonic: '💡 Nhớ kỹ: ĐƯỜNG THẲNG CÓ TRỊ TUYỆT ĐỐI • VECTƠ THÌ KHÔNG!',
-        likes: 10500,
-        commentsCount: 512
-      }
-    ];
-    const picked = traps[idx % traps.length];
-    return {
-      type: 'trap',
-      ...picked
-    };
+  function railHtml(item) {
+    const isReal = VALID_FORMULA_IDS.has(item.id);
+    const saved = isReal && state.bookmarkedIds.has(item.id);
+    return `
+      <div class="reel-rail">
+        <button class="rail-btn js-save${saved ? ' is-active' : ''}" type="button" data-id="${item.id}"
+                aria-pressed="${saved}" aria-label="Lưu công thức">
+          <span class="rail-btn__circle">${ICON.bookmark}</span>
+          <span class="rail-count" data-count="${item.id}">${formatNumber(item.likes)}</span>
+        </button>
+
+        <button class="rail-btn js-comment" type="button" data-id="${item.id}"
+                data-title="${escAttr(item.title)}" aria-label="Xem thảo luận">
+          <span class="rail-btn__circle">${ICON.comment}</span>
+          <span class="rail-count">${item.commentsCount}</span>
+        </button>
+
+        <button class="rail-btn js-share" type="button" data-id="${item.id}" aria-label="Chia sẻ công thức">
+          <span class="rail-btn__circle">${ICON.image}</span>
+          <span class="rail-count">Chia sẻ</span>
+        </button>
+
+        <button class="rail-btn js-music${reelsState.lofiOn ? ' is-playing' : ''}" type="button" aria-label="Bật tắt nhạc nền">
+          <span class="rail-btn__circle">${ICON.music}</span>
+          <span class="rail-count">Nhạc</span>
+        </button>
+      </div>`;
   }
 
-  function createCasioTrickCard(idx) {
-    const casioTricks = [
-      {
-        id: `casio-${idx}`,
-        chapterName: '🕹️ Tuyệt Kỹ Casio 580',
-        title: '⚡ CASIO TABLE: TÌM CỰC TRỊ VÀ MAX/MIN TRONG 5S',
-        latex: '\\text{MENU 8 (TABLE)} \\rightarrow f(x) \\rightarrow \\text{Start: } a, \\text{ End: } b, \\text{ Step: } \\frac{b-a}{29}',
-        desc: 'Quét bảng giá trị tìm giá trị lớn nhất, nhỏ nhất và số nghiệm phương trình cực nhanh.',
-        mnemonic: '💡 Mẹo Casio: Bấm Step = (Cuối - Đầu) / 29 hoặc 44 để chia nhỏ bước nhảy, bắt trọn điểm rơi!',
-        likes: 15600,
-        commentsCount: 780
-      },
-      {
-        id: `casio-int-${idx}`,
-        chapterName: '∫ Casio Tích Phân',
-        title: '⚡ CASIO ĐẠO HÀM: CHỐNG NGUYÊN HÀM BẰNG PHÍM d/dx',
-        latex: '\\frac{d}{dx}\\Big(F(x)\\Big)\\Bigg|_{x = 2} - f(2) = 0 \\quad (\\text{Bấm SHIFT } \\int)',
-        desc: 'Thay vì tính nguyên hàm phức tạp, lấy đạo hàm của 4 đáp án tại x = 2 rồi trừ đi đề bài. Cái nào ra 0 thì khoanh!',
-        mnemonic: '💡 Khẩu quyết: "Đạo hàm đáp án trừ đề bài, bằng 0 khoanh ngay không cần nghĩ!"',
-        likes: 19800,
-        commentsCount: 940
-      }
-    ];
-    const picked = casioTricks[idx % casioTricks.length];
-    return {
-      type: 'casio',
-      ...picked
-    };
+  function mnemonicCallout(text) {
+    const clean = stripMnemonicPrefix(text);
+    if (!clean) return '';
+    return `
+      <div class="callout callout--info">
+        <span class="callout-label">💡 Mẹo nhớ nhanh:</span>
+        <p>${clean}</p>
+      </div>`;
   }
 
-  function createReflexChallengeCard(f, idx) {
-    let qText = f.quiz ? f.quiz.q : 'Chọn công thức chính xác:';
-    let optA = (f.quiz && f.quiz.options) ? f.quiz.options[0] : 'Công thức A';
-    let optB = (f.quiz && f.quiz.options) ? f.quiz.options[1] : 'Công thức B';
-    let correctChoice = (f.quiz && f.quiz.correct === 1) ? 'B' : 'A';
+  function buildFormulaBody(item) {
+    return `
+      <div class="reel-head">
+        <span class="badge badge--chapter">Toán 12</span>
+        <span class="badge badge--tier">${escHtml(item.chapterName)}</span>
+      </div>
 
-    return {
-      type: 'reflex',
-      id: `reflex-${f.id}-${idx}`,
-      chapterName: f.chapterName,
-      title: '⚡ THỬ THÁCH PHẢN XẠ 5S (5s REFLEX)',
-      question: qText,
-      optA,
-      optB,
-      correctChoice,
-      likes: 9500,
-      commentsCount: 380
-    };
+      <h2 class="reel-title">${item.title}</h2>
+
+      <div class="formula-box"><div class="math-render">$$${item.latex}$$</div></div>
+
+      ${item.desc ? `<p class="reel-desc">${item.desc}</p>` : ''}
+      ${mnemonicCallout(item.mnemonic)}`;
   }
 
-  function renderReelsFeed() {
-    reelsFeed.innerHTML = '';
+  function buildTrapBody(item) {
+    return `
+      <div class="reel-head">
+        <span class="badge badge--chapter">Toán 12</span>
+        <span class="badge badge--tier badge--tier-warn">Bẫy thường gặp</span>
+      </div>
 
-    reelsState.deck.forEach((item, index) => {
-      const card = document.createElement('div');
-      card.className = `reel-card ${item.type === 'trap' ? 'trap-boss' : (item.type === 'reflex' ? 'reflex-boss' : '')}`;
-      card.dataset.index = index;
-      card.dataset.id = item.id;
+      <div class="reel-heading">
+        <span class="kicker">${escHtml(item.chapterName)}</span>
+        <h2 class="reel-title">${item.title}</h2>
+      </div>
 
-      if (item.type === 'trap') {
-        // TRAP CARD TEMPLATE (Clean, High-Yield)
-        card.innerHTML = `
-          <div class="reel-main-body">
-            <div class="death-trap-header">
-              <span>⚠️</span>
-              <span>BẪY PHỔ BIẾN THPTQG</span>
-            </div>
-            <div class="reel-badge-row">
-              <span class="reel-chapter-tag">${item.chapterName}</span>
-              <span class="reel-tier-tag boss">DỄ SAI</span>
-            </div>
-            <h3 class="reel-title">${item.title.replace(/^💀\s*/, '')}</h3>
-            
-            <div class="reel-formula-card">
-              <div class="reel-katex-render">$$${item.latex}$$</div>
-            </div>
+      <div class="formula-box"><div class="math-render">$$${item.latex}$$</div></div>
 
-            <div class="trap-comparison-box">
-              <div class="trap-wrong">${item.wrong}</div>
-              <div class="trap-right">${item.right}</div>
-            </div>
+      <div class="callout callout--danger">
+        <span class="callout-label">✕ Cách làm sai</span>
+        <p>${item.trap}</p>
+      </div>
 
-            <div class="reel-trick-box" style="margin-top: 10px;">
-              <div>${item.mnemonic ? item.mnemonic.replace(/^💡\s*(Mẹo nhớ\s*:?\s*)?/i, '💡 ') : ''}</div>
-            </div>
-          </div>
+      <div class="callout callout--success">
+        <span class="callout-label">✓ Cách làm đúng</span>
+        <p>${item.fix}</p>
+      </div>
 
-          ${renderRightActions(item)}
-        `;
-      } else if (item.type === 'reflex') {
-        // 5-SECOND REFLEX CHALLENGE CARD TEMPLATE
-        card.innerHTML = `
-          <div class="reel-main-body">
-            <div class="reflex-header-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span class="reel-chapter-tag">${item.chapterName}</span>
-              <span class="reflex-countdown-badge" id="countdown-${item.id}">⏱️ 5s</span>
-            </div>
-            
-            <div class="reflex-timer-line">
-              <div class="reflex-timer-progress" id="timerBar-${item.id}" style="width: 100%;"></div>
-            </div>
+      ${mnemonicCallout(item.mnemonic)}`;
+  }
 
-            <h3 class="reel-title" style="color: #38bdf8; font-size: 1.15rem; margin-bottom: 10px;">⚡ Thử Thách Phản Xạ 5s</h3>
-            <div class="reflex-question-text">${item.question}</div>
+  function buildCasioBody(item) {
+    return `
+      <div class="reel-head">
+        <span class="badge badge--chapter">Toán 12</span>
+        <span class="badge badge--tier badge--tier-accent">Mẹo máy tính</span>
+      </div>
 
-            <div class="reflex-options-grid">
-              <button class="reflex-btn" data-choice="A" data-correct="${item.correctChoice}">A: ${item.optA}</button>
-              <button class="reflex-btn" data-choice="B" data-correct="${item.correctChoice}">B: ${item.optB}</button>
-            </div>
+      <div class="reel-heading">
+        <span class="kicker">${escHtml(item.chapterName)}</span>
+        <h2 class="reel-title">${item.title}</h2>
+      </div>
 
-            <div class="reel-trick-box" style="border-left-color: #a855f7; margin-top: 8px; font-size: 0.78rem;">
-              <span>Chọn đáp án nhanh trước khi hết giờ để tăng chuỗi streak!</span>
-            </div>
-          </div>
+      <div class="formula-box"><div class="math-render">$$${item.latex}$$</div></div>
 
-          ${renderRightActions(item)}
-        `;
-      } else {
-        // STANDARD FORMULA OR CASIO CARD
-        const cleanMnemonic = item.mnemonic ? item.mnemonic.replace(/^💡\s*(Mẹo nhớ\s*:?\s*)?/i, '💡 ') : '';
-        const tipText = cleanMnemonic || item.desc || '';
+      ${item.desc ? `<p class="reel-desc">${item.desc}</p>` : ''}
+      ${mnemonicCallout(item.mnemonic)}`;
+  }
 
-        card.innerHTML = `
-          <div class="reel-main-body">
-            <div class="reel-badge-row">
-              <span class="reel-chapter-tag">${item.chapterName}</span>
-              <span class="reel-tier-tag ${item.tier}">
-                ${item.type === 'casio' ? 'CASIO NHANH' : (item.tier === 'boss' ? 'VẬN DỤNG CAO' : 'TRỌNG TÂM')}
-              </span>
-            </div>
-            <h3 class="reel-title">${item.title}</h3>
+  function buildReflexBody(item) {
+    return `
+      <div class="reel-head">
+        <span class="badge badge--chapter">Toán 12</span>
+        <span class="badge badge--tier badge--tier-accent">Thử thách ${REFLEX_SECONDS}s</span>
+      </div>
 
-            <div class="reel-formula-card">
-              <div class="reel-katex-render">$$${item.latex}$$</div>
-            </div>
+      <div class="reflex">
+        <div class="timer"><span class="timer__fill" data-reflex-bar="${item.id}"></span></div>
+        <span class="reflex-count" data-reflex-count="${item.id}">${REFLEX_SECONDS}.0s</span>
 
-            ${tipText ? `
-            <div class="reel-trick-box">
-              <div>${tipText}</div>
-            </div>
-            ` : ''}
-          </div>
+        <p class="reflex-q">${item.question}</p>
 
-          ${renderRightActions(item)}
-        `;
-      }
+        <div class="option-list">
+          ${item.options.map((opt, idx) => `
+            <button class="option-btn" type="button" data-reflex-answer="${idx}" data-correct="${item.correct}">
+              <span class="option-key">${LETTERS[idx] || idx + 1}</span>
+              <span class="option-text">${formatQuizOption(opt)}</span>
+            </button>`).join('')}
+        </div>
 
-      reelsFeed.appendChild(card);
+        <div class="callout callout--success" data-reflex-explain="${item.id}" hidden>
+          <span class="callout-label">Giải thích</span>
+          <p>${item.explain || 'Xem lại công thức trong sổ tay để nắm chắc dạng này.'}</p>
+        </div>
+      </div>`;
+  }
+
+  function renderReels() {
+    if (!reelsFeed) return;
+
+    reelsFeed.innerHTML = reelsState.deck.map((item) => {
+      let body;
+      if (item.type === 'trap') body = buildTrapBody(item);
+      else if (item.type === 'casio') body = buildCasioBody(item);
+      else if (item.type === 'reflex') body = buildReflexBody(item);
+      else body = buildFormulaBody(item);
+
+      return `<article class="reel-card" data-id="${item.id}" data-type="${item.type}">
+                <div class="reel-scroll">${body}</div>
+                ${railHtml(item)}
+              </article>`;
+    }).join('');
+
+    // Render sẵn vài card đầu: tránh thoáng thấy LaTeX thô khi vừa mở app
+    Array.from(reelsFeed.querySelectorAll('.reel-card')).slice(0, 2).forEach((card) => {
+      if (!mathRendered.has(card) && renderMath(card)) mathRendered.add(card);
     });
 
-    renderAllMath(reelsFeed);
-    setupCardObservers();
+    observeReelCards();
   }
 
-  function renderRightActions(item) {
-    const isBookmarked = state.bookmarkedIds.has(item.id);
-    return `
-      <div class="reel-actions-rail">
-        <button class="action-circle-btn like-btn ${isBookmarked ? 'liked' : ''}" data-id="${item.id}" title="Thả tim lưu vào sổ tay">
-          <span>❤️</span>
-        </button>
-        <span class="action-label-count" id="likeCount-${item.id}">${formatNumber(item.likes)}</span>
+  let reelsObserver = null;
 
-        <button class="action-circle-btn comment-btn" data-id="${item.id}" data-title="${item.title.replace(/"/g, '&quot;')}" title="Xem bình luận hội 2k7">
-          <span>💬</span>
-        </button>
-        <span class="action-label-count">${item.commentsCount}</span>
+  function observeReelCards() {
+    if (!('IntersectionObserver' in window) || !reelsFeed) {
+      renderMath(reelsFeed, true);
+      return;
+    }
 
-        <button class="action-circle-btn share-story-btn" data-id="${item.id}" title="Tạo ảnh 9:16 flex lên Story">
-          <span>📸</span>
-        </button>
-        <span class="action-label-count">Flex</span>
+    if (reelsObserver) reelsObserver.disconnect();
 
-        <button class="action-circle-btn music-disc ${reelsState.lofiPlaying ? 'disc-spinning' : ''}" id="musicDiscBtn" title="Bật/Tắt Lofi Beats chill">
-          <span>🎵</span>
-        </button>
-      </div>
-    `;
+    reelsObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const card = entry.target;
+
+        // Render KaTeX theo nhu cầu (tiết kiệm CPU trên mobile)
+        if (!mathRendered.has(card) && renderMath(card)) mathRendered.add(card);
+
+        if (card.dataset.type === 'reflex') startReflexTimer(card.dataset.id);
+      });
+    }, { root: reelsFeed, threshold: 0.55 });
+
+    reelsFeed.querySelectorAll('.reel-card').forEach((card) => reelsObserver.observe(card));
   }
 
-  function formatNumber(num) {
-    return num >= 1000 ? (num / 1000).toFixed(1) + 'k' : num;
+  /* ------------------------------- Reflex -------------------------------- */
+  function startReflexTimer(cardId) {
+    if (reelsState.reflexTimers[cardId]) return;
+    const bar = reelsFeed.querySelector(`[data-reflex-bar="${cardId}"]`);
+    const count = reelsFeed.querySelector(`[data-reflex-count="${cardId}"]`);
+    if (!bar) return;
+
+    let left = REFLEX_SECONDS * 10;
+
+    reelsState.reflexTimers[cardId] = setInterval(() => {
+      left -= 1;
+      const seconds = Math.max(0, left / 10);
+      if (count) count.textContent = `${seconds.toFixed(1)}s`;
+      bar.style.width = `${(left / (REFLEX_SECONDS * 10)) * 100}%`;
+
+      if (left <= 0) {
+        clearInterval(reelsState.reflexTimers[cardId]);
+        reelsState.reflexTimers[cardId] = true;
+        if (count) count.textContent = 'Hết giờ';
+        revealReflex(cardId, -1);
+      }
+    }, 100);
   }
 
-  // Double-tap heart burst & scroll observer
-  function setupReelsInteractions() {
-    let lastTapTime = 0;
+  function revealReflex(cardId, chosenIndex) {
+    const card = reelsFeed.querySelector(`.reel-card[data-id="${cardId}"]`);
+    if (!card) return;
 
-    // Double tap on Reels Feed
+    card.querySelectorAll('[data-reflex-answer]').forEach((btn) => {
+      const idx = Number(btn.dataset.reflexAnswer);
+      const correct = Number(btn.dataset.correct);
+      btn.disabled = true;
+      if (idx === correct) btn.classList.add('is-correct');
+      else if (idx === chosenIndex) btn.classList.add('is-wrong');
+      else btn.classList.add('is-dim');
+    });
+
+    const explain = card.querySelector(`[data-reflex-explain="${cardId}"]`);
+    if (explain) {
+      explain.hidden = false;
+      renderMath(explain, true);
+    }
+  }
+
+  function answerReflex(button) {
+    const card = button.closest('.reel-card');
+    if (!card) return;
+    const cardId = card.dataset.id;
+
+    if (reelsState.reflexTimers[cardId] && reelsState.reflexTimers[cardId] !== true) {
+      clearInterval(reelsState.reflexTimers[cardId]);
+    }
+    reelsState.reflexTimers[cardId] = true;
+
+    const chosen = Number(button.dataset.reflexAnswer);
+    const correct = Number(button.dataset.correct);
+
+    if (chosen === correct) {
+      playSound('success');
+      bumpStreak();
+      showToast('Chính xác!');
+    } else {
+      playSound('fail');
+      resetStreak();
+      showToast('Chưa đúng, xem giải thích nhé');
+    }
+
+    revealReflex(cardId, chosen);
+  }
+
+  /* ------------------------------ Rail actions --------------------------- */
+  function toggleSave(id, button) {
+    const countEl = reelsFeed.querySelector(`[data-count="${id}"]`);
+    const isReal = VALID_FORMULA_IDS.has(id);
+
+    if (!isReal) {
+      playSound('success');
+      showToast('Đã thích công thức này');
+      return;
+    }
+
+    const current = countEl ? parseCount(countEl.textContent) : 0;
+
+    if (state.bookmarkedIds.has(id)) {
+      state.bookmarkedIds.delete(id);
+      button.classList.remove('is-active');
+      button.setAttribute('aria-pressed', 'false');
+      if (countEl) countEl.textContent = formatNumber(Math.max(0, current - 1));
+      playSound('click');
+      showToast('Đã bỏ lưu');
+    } else {
+      state.bookmarkedIds.add(id);
+      button.classList.add('is-active');
+      button.setAttribute('aria-pressed', 'true');
+      playSound('success');
+      showToast('Đã lưu vào sổ tay');
+      if (countEl) countEl.textContent = formatNumber(current + 1);
+    }
+    writeSet(KEYS.BOOKMARKED, state.bookmarkedIds);
+    updateProgress();
+  }
+
+  function createHeartBurst(x, y) {
+    playSound('flip');
+    const heart = document.createElement('span');
+    heart.className = 'heart-burst';
+    heart.textContent = '❤️';
+    heart.style.left = `${x}px`;
+    heart.style.top = `${y}px`;
+    document.body.appendChild(heart);
+    setTimeout(() => heart.remove(), 900);
+  }
+
+  function bindReelsInteractions() {
+    if (!reelsFeed) return;
+
+    let lastTap = 0;
+
     reelsFeed.addEventListener('click', (e) => {
-      // Don't trigger if clicked button or interactive elements
-      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select')) return;
+      const reflexBtn = e.target.closest('[data-reflex-answer]');
+      if (reflexBtn && !reflexBtn.disabled) { answerReflex(reflexBtn); return; }
 
-      const currentTime = new Date().getTime();
-      const tapGap = currentTime - lastTapTime;
+      const saveBtn = e.target.closest('.js-save');
+      if (saveBtn) { toggleSave(saveBtn.dataset.id, saveBtn); return; }
 
-      if (tapGap < 320 && tapGap > 0) {
-        // DOUBLE TAP DETECTED!
+      const commentBtn = e.target.closest('.js-comment');
+      if (commentBtn) { openComments(commentBtn.dataset.id, commentBtn.dataset.title); return; }
+
+      const shareBtn = e.target.closest('.js-share');
+      if (shareBtn) { openStory(shareBtn.dataset.id); return; }
+
+      if (e.target.closest('.js-music')) { toggleLofi(); return; }
+
+      // Double-tap để lưu (bỏ qua khi bấm vào phần tử tương tác)
+      if (e.target.closest('button, a, input, select')) return;
+      const now = Date.now();
+      if (now - lastTap < 320) {
         createHeartBurst(e.clientX, e.clientY);
         const card = e.target.closest('.reel-card');
         if (card) {
-          const id = card.dataset.id;
-          likeReel(id, card);
+          const saveBtnInCard = card.querySelector('.js-save');
+          if (saveBtnInCard && !saveBtnInCard.classList.contains('is-active')) toggleSave(card.dataset.id, saveBtnInCard);
         }
+        lastTap = 0;
+        return;
       }
-      lastTapTime = currentTime;
+      lastTap = now;
     });
 
-    // Delegated actions (Like, Comment, Story, Music, Reflex choice)
-    reelsFeed.addEventListener('click', (e) => {
-      const likeBtn = e.target.closest('.like-btn');
-      if (likeBtn) {
-        const id = likeBtn.dataset.id;
-        const card = likeBtn.closest('.reel-card');
-        likeReel(id, card);
-        return;
-      }
+    reelsFeed.addEventListener('scroll', () => {
+      if (!reelsHint || reelsHint.classList.contains('is-hidden')) return;
+      reelsHint.classList.add('is-hidden');
+      localStorage.setItem(KEYS.REELS_SEEN, '1');
+    }, { passive: true, once: true });
 
-      const commentBtn = e.target.closest('.comment-btn');
-      if (commentBtn) {
-        const id = commentBtn.dataset.id;
-        const title = commentBtn.dataset.title;
-        openCommentDrawer(id, title);
-        return;
-      }
-
-      const shareBtn = e.target.closest('.share-story-btn');
-      if (shareBtn) {
-        const id = shareBtn.dataset.id;
-        const card = shareBtn.closest('.reel-card');
-        openStoryModal(id, card);
-        return;
-      }
-
-      const musicBtn = e.target.closest('#musicDiscBtn');
-      if (musicBtn) {
-        toggleLofiBeats();
-        return;
-      }
-
-      const reflexBtn = e.target.closest('.reflex-btn');
-      if (reflexBtn) {
-        handleReflexAnswer(reflexBtn);
-        return;
-      }
-    });
-
-    // Keyboard Arrow navigation for desktop
     window.addEventListener('keydown', (e) => {
       if (state.activeTab !== 'paneReels') return;
+      if (e.target.closest('input, select, textarea')) return;
       if (e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault();
         reelsFeed.scrollBy({ top: reelsFeed.clientHeight, behavior: 'smooth' });
       } else if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
         reelsFeed.scrollBy({ top: -reelsFeed.clientHeight, behavior: 'smooth' });
       }
     });
   }
 
-  function setupCardObservers() {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const card = entry.target;
-          addDopamine(8); // +8 Dopamine per scroll!
-
-          // If Reflex card, start 5s countdown
-          if (card.classList.contains('reflex-boss')) {
-            startReflexTimer(card.dataset.id);
-          }
-        }
-      });
-    }, { root: reelsFeed, threshold: 0.6 });
-
-    document.querySelectorAll('.reel-card').forEach(c => observer.observe(c));
+  /* -------------------------------- Nhạc nền ----------------------------- */
+  function toggleLofi() {
+    reelsState.lofiOn = !reelsState.lofiOn;
+    reelsFeed.querySelectorAll('.js-music').forEach((btn) => btn.classList.toggle('is-playing', reelsState.lofiOn));
+    if (reelsState.lofiOn) { startLofi(); showToast('Đang phát nhạc nền'); }
+    else { stopLofi(); showToast('Đã tắt nhạc nền'); }
   }
 
-  // Heart particle animation
-  function createHeartBurst(x, y) {
-    playSound('flip');
-    const heart = document.createElement('div');
-    heart.className = 'heart-burst-particle';
-    heart.innerHTML = '❤️';
-    heart.style.left = `${x}px`;
-    heart.style.top = `${y}px`;
-    document.body.appendChild(heart);
-
-    setTimeout(() => {
-      heart.remove();
-    }, 850);
-  }
-
-  function likeReel(id, card) {
-    playSound('success');
-    const likeBtn = card ? card.querySelector('.like-btn') : document.querySelector(`.like-btn[data-id="${id}"]`);
-    const countEl = card ? card.querySelector(`#likeCount-${id}`) : document.getElementById(`likeCount-${id}`);
-
-    if (!state.bookmarkedIds.has(id)) {
-      state.bookmarkedIds.add(id);
-      localStorage.setItem(STORAGE_KEYS.BOOKMARKED, JSON.stringify([...state.bookmarkedIds]));
-      if (likeBtn) likeBtn.classList.add('liked');
-      if (countEl) {
-        const cur = parseInt(countEl.textContent.replace('k', '000'), 10) || 1200;
-        countEl.textContent = formatNumber(cur + 1);
-      }
-      addDopamine(15);
-      showToast('❤️ Đã lưu công thức!');
-    }
-  }
-
-  // Dopamine & Fever Mode System
-  function addDopamine(amount) {
-    const multiplier = reelsState.isFever ? 2 : 1;
-    reelsState.dopamineScore = Math.min(100, reelsState.dopamineScore + (amount * multiplier));
-
-    if (dopamineFillBar) {
-      dopamineFillBar.style.width = `${reelsState.dopamineScore}%`;
-    }
-
-    if (reelsState.dopamineScore >= 100 && !reelsState.isFever) {
-      triggerFeverMode();
-    }
-  }
-
-  function triggerFeverMode() {
-    reelsState.isFever = true;
-    playSound('success');
-    if (dopamineMultiplier) dopamineMultiplier.textContent = 'x2.0';
-    if (feverModeBanner) feverModeBanner.classList.add('active');
-
-    clearTimeout(reelsState.feverTimeout);
-    reelsState.feverTimeout = setTimeout(() => {
-      reelsState.isFever = false;
-      reelsState.dopamineScore = 30;
-      if (dopamineMultiplier) dopamineMultiplier.textContent = 'x1.0';
-      if (feverModeBanner) feverModeBanner.classList.remove('active');
-      if (dopamineFillBar) dopamineFillBar.style.width = '30%';
-    }, 30000);
-  }
-
-  // Reflex 5-Second Challenge Logic
-  function startReflexTimer(cardId) {
-    if (reelsState.reflexTimers[cardId]) return; // Already running or finished
-
-    const countdownEl = document.getElementById(`countdown-${cardId}`);
-    const timerBar = document.getElementById(`timerBar-${cardId}`);
-    let timeLeft = 5.0;
-
-    reelsState.reflexTimers[cardId] = setInterval(() => {
-      timeLeft -= 0.1;
-      if (countdownEl) countdownEl.textContent = `⏱️ ${Math.max(0, timeLeft).toFixed(1)}s`;
-      if (timerBar) timerBar.style.width = `${Math.max(0, (timeLeft / 5) * 100)}%`;
-
-      if (timeLeft <= 0) {
-        clearInterval(reelsState.reflexTimers[cardId]);
-        if (countdownEl) countdownEl.textContent = 'HẾT GIỜ!';
-      }
-    }, 100);
-  }
-
-  function handleReflexAnswer(button) {
-    const choice = button.dataset.choice;
-    const correct = button.dataset.correct;
-    const isCorrect = (choice === correct);
-
-    const parentGrid = button.closest('.reflex-options-grid');
-    parentGrid.querySelectorAll('.reflex-btn').forEach(btn => btn.disabled = true);
-
-    if (isCorrect) {
-      button.classList.add('correct');
-      playSound('success');
-      addDopamine(50);
-      state.quizStreak = (state.quizStreak || 0) + 1;
-      localStorage.setItem(STORAGE_KEYS.STREAK, state.quizStreak);
-      showToast(`🏆 CHÍNH XÁC! +50 Dopamine • Streak: ${state.quizStreak} 🔥`);
-    } else {
-      button.classList.add('wrong');
-      playSound('fail');
-      showToast('❌ Sai rồi! Xem lại khẩu quyết ở dưới nhé.');
-    }
-  }
-
-  // Web Audio Lofi Synth Player
-  function toggleLofiBeats() {
-    reelsState.lofiPlaying = !reelsState.lofiPlaying;
-    const discBtns = document.querySelectorAll('.music-disc');
-    discBtns.forEach(b => b.classList.toggle('disc-spinning', reelsState.lofiPlaying));
-
-    if (reelsState.lofiPlaying) {
-      startLofiSynth();
-      showToast('🎵 Đang phát: Lofi Study Beats 2k7 (Synthwave Chill)');
-    } else {
-      stopLofiSynth();
-      showToast('🔇 Đã tắt nhạc nền.');
-    }
-  }
-
-  let lofiOsc = null;
-  let lofiGain = null;
-
-  function startLofiSynth() {
+  function startLofi() {
     try {
       const ctx = getAudioContext();
       if (!ctx) return;
 
       const chords = [
-        [349.23, 440.00, 523.25, 659.25], // Fmaj7
-        [329.63, 392.00, 493.88, 587.33], // Em7
-        [293.66, 349.23, 440.00, 523.25], // Dm7
-        [261.63, 329.63, 392.00, 493.88]  // Cmaj7
+        [349.23, 440.0, 523.25, 659.25],
+        [329.63, 392.0, 493.88, 587.33],
+        [293.66, 349.23, 440.0, 523.25],
+        [261.63, 329.63, 392.0, 493.88]
       ];
-      let chordIndex = 0;
+      let index = 0;
 
-      function playNextChord() {
-        if (!reelsState.lofiPlaying) return;
-        const notes = chords[chordIndex];
-        chordIndex = (chordIndex + 1) % chords.length;
+      const master = ctx.createGain();
+      master.gain.value = 0.5;
+      master.connect(ctx.destination);
+      reelsState.lofiNodes = master;
 
-        notes.forEach((freq, idx) => {
+      const playChord = () => {
+        if (!reelsState.lofiOn) return;
+        const notes = chords[index];
+        index = (index + 1) % chords.length;
+        const now = ctx.currentTime;
+
+        notes.forEach((freq) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           const filter = ctx.createBiquadFilter();
 
           filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(650, ctx.currentTime);
+          filter.frequency.value = 700;
 
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          osc.frequency.value = freq;
 
-          const now = ctx.currentTime;
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(0.04, now + 0.3);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+          gain.gain.setValueAtTime(0.0005, now);
+          gain.gain.linearRampToValueAtTime(0.035, now + 0.35);
+          gain.gain.exponentialRampToValueAtTime(0.0005, now + 2.8);
 
-          osc.connect(filter);
-          filter.connect(gain);
-          gain.connect(ctx.destination);
-
+          osc.connect(filter).connect(gain).connect(master);
           osc.start(now);
-          osc.stop(now + 2.8);
+          osc.stop(now + 2.9);
         });
-      }
+      };
 
-      playNextChord();
-      reelsState.lofiInterval = setInterval(playNextChord, 3000);
-    } catch (e) {}
+      playChord();
+      reelsState.lofiInterval = setInterval(playChord, 3000);
+    } catch (err) {
+      reelsState.lofiOn = false;
+    }
   }
 
-  function stopLofiSynth() {
+  function stopLofi() {
     if (reelsState.lofiInterval) {
       clearInterval(reelsState.lofiInterval);
       reelsState.lofiInterval = null;
     }
+    if (reelsState.lofiNodes) {
+      try { reelsState.lofiNodes.disconnect(); } catch (err) { /* noop */ }
+      reelsState.lofiNodes = null;
+    }
   }
 
-  // Comment Drawer Operations
-  function openCommentDrawer(id, title) {
-    if (!reelsCommentDrawer) return;
-    reelsState.activeFormulaForDrawer = id;
-    if (drawerFormulaName) drawerFormulaName.textContent = title;
+  /* ==========================================================================
+     13. OVERLAY (SHEET / MODAL)
+     ========================================================================== */
+  function openOverlay(el) {
+    if (!el) return;
+    el.hidden = false;
+    void el.offsetHeight; // ép reflow đồng bộ: không phụ thuộc requestAnimationFrame (có thể bị treo ở tab nền)
+    el.classList.add('active');
+  }
 
-    // Load comments (defaults + saved in localStorage)
-    const saved = JSON.parse(localStorage.getItem(`reels_comments_${id}`) || '[]');
-    const allComments = [...saved, ...DEFAULT_GENZ_COMMENTS];
+  function closeOverlay(el) {
+    if (!el) return;
+    el.classList.remove('active');
+    setTimeout(() => { el.hidden = true; }, 300);
+  }
 
-    drawerCommentsStream.innerHTML = '';
-    allComments.forEach(c => {
-      const item = document.createElement('div');
-      item.className = 'comment-bubble-item';
-      item.innerHTML = `
-        <div class="comment-avatar">😎</div>
-        <div class="comment-content-box">
-          <div class="comment-author-row">
-            <span>${c.author}</span>
-            <span class="comment-time">${c.time}</span>
+  /* ==========================================================================
+     14. BÌNH LUẬN
+     ========================================================================== */
+  const drawer = $('reelsCommentDrawer');
+  const drawerStream = $('drawerCommentsStream');
+  const drawerTitle = $('drawerFormulaName');
+  const commentForm = $('commentSubmitForm');
+  const commentInput = $('commentInputField');
+
+  const SEED_COMMENTS = [
+    { author: 'Quân 2k7', text: 'Học thuộc cái này xong gặp đề Bộ vẫn phải đọc kỹ đề đấy anh em.', time: 'Vừa xong' },
+    { author: 'Hương Mai', text: 'Mẹo này tiết kiệm được kha khá thời gian ở câu vận dụng.', time: '2 phút trước' },
+    { author: 'Tuấn Anh', text: 'Mình vẫn khoanh bằng máy tính cho chắc, nhưng phải hiểu bản chất đã.', time: '15 phút trước' },
+    { author: 'Linh Đan', text: 'Xem lúc 2h sáng, mai kiểm tra 15 phút. Lưu lại cái đã.', time: '1 giờ trước' },
+    { author: 'Đức Minh', text: 'Bẫy này năm ngoái mình mất điểm, giờ nhớ đời luôn.', time: '3 giờ trước' }
+  ];
+
+  function renderComments(id) {
+    if (!drawerStream) return;
+    const mine = readJSON(KEYS.commentsFor(id), []);
+
+    const card = (c, isMine) => `
+      <div class="comment${isMine ? ' comment--mine' : ''}">
+        <span class="comment__avatar" aria-hidden="true">${isMine ? '🙋' : '🎓'}</span>
+        <div class="comment__body">
+          <div class="comment__meta">
+            <span class="comment__author">${escHtml(c.author)}</span>
+            <span class="comment__time">${escHtml(c.time)}</span>
           </div>
-          <div class="comment-text">${c.text}</div>
+          <p class="comment__text">${escHtml(c.text)}</p>
         </div>
-      `;
-      drawerCommentsStream.appendChild(item);
-    });
+      </div>`;
 
-    reelsCommentDrawer.classList.add('active');
+    drawerStream.innerHTML = [
+      ...mine.map((c) => card(c, true)),
+      ...SEED_COMMENTS.map((c) => card(c, false))
+    ].join('');
   }
 
-  if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', () => reelsCommentDrawer.classList.remove('active'));
-  if (drawerBackdrop) drawerBackdrop.addEventListener('click', () => reelsCommentDrawer.classList.remove('active'));
+  function openComments(id, title) {
+    reelsState.activeFormula = id;
+    reelsState.activeTitle = title || 'Công thức';
+    if (drawerTitle) drawerTitle.textContent = reelsState.activeTitle;
+    renderComments(id);
+    openOverlay(drawer);
+  }
 
-  if (commentSubmitForm) {
-    commentSubmitForm.addEventListener('submit', (e) => {
+  const drawerCloseBtn = $('drawerCloseBtn');
+  const drawerBackdrop = $('drawerBackdrop');
+  if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', () => { playSound('click'); closeOverlay(drawer); });
+  if (drawerBackdrop) drawerBackdrop.addEventListener('click', () => closeOverlay(drawer));
+
+  if (commentForm) {
+    commentForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const text = commentInputField.value.trim();
-      if (!text || !reelsState.activeFormulaForDrawer) return;
+      if (!commentInput) return;
 
-      const newC = {
-        author: 'Bạn (Sĩ tử 10đ)',
-        text,
-        time: 'Vừa xong'
-      };
+      const text = commentInput.value.trim();
+      if (!text || !reelsState.activeFormula) return;
 
-      const saved = JSON.parse(localStorage.getItem(`reels_comments_${reelsState.activeFormulaForDrawer}`) || '[]');
-      saved.unshift(newC);
-      localStorage.setItem(`reels_comments_${reelsState.activeFormulaForDrawer}`, JSON.stringify(saved));
+      const list = readJSON(KEYS.commentsFor(reelsState.activeFormula), []);
+      list.unshift({ author: 'Bạn', text, time: 'Vừa xong' });
+      localStorage.setItem(KEYS.commentsFor(reelsState.activeFormula), JSON.stringify(list.slice(0, 50)));
 
-      commentInputField.value = '';
-      openCommentDrawer(reelsState.activeFormulaForDrawer, drawerFormulaName.textContent);
+      commentInput.value = '';
+      commentInput.blur();
+      renderComments(reelsState.activeFormula);
       playSound('click');
-      addDopamine(20);
-      showToast('💬 Đã gửi bình luận!');
+      showToast('Đã gửi bình luận');
     });
   }
 
-  // Flex Story 9:16 Modal
-  function openStoryModal(id, card) {
-    if (!storyExportModal || !card) return;
-    const title = card.querySelector('.reel-title') ? card.querySelector('.reel-title').textContent : 'Toán 12 Pro';
-    const katexMath = card.querySelector('.reel-katex-render') ? card.querySelector('.reel-katex-render').innerHTML : '';
-    const chapterTag = card.querySelector('.reel-chapter-tag') ? card.querySelector('.reel-chapter-tag').textContent : 'Toán 12';
+  /* ==========================================================================
+     15. CHIA SẺ STORY 9:16
+     ========================================================================== */
+  const storyModal = $('storyExportModal');
+  const storyCanvas = $('storyCardContainer');
 
-    storyCardContainer.innerHTML = `
-      <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <span style="font-size: 0.75rem; font-weight: 800; color: #00f5ff; background: rgba(0,245,255,0.15); padding: 4px 10px; border-radius: 999px;">${chapterTag}</span>
-          <span style="font-family: var(--font-heading); font-size: 0.8rem; font-weight: 900; color: #ff007f;">TOÁN 12 PRO</span>
-        </div>
-        <h2 style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 900; color: #fff; line-height: 1.35; margin-bottom: 24px;">${title}</h2>
-        <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(0,245,255,0.3); border-radius: 16px; padding: 20px 14px; text-align: center; margin-bottom: 20px; box-shadow: 0 0 20px rgba(0,245,255,0.2);">
-          ${katexMath}
-        </div>
-      </div>
-      <div>
-        <div style="background: rgba(255,200,59,0.12); border-left: 3px solid #ffc83b; padding: 10px; border-radius: 8px; font-size: 0.78rem; color: #f8fafc; margin-bottom: 20px;">
-          🔥 "Hôm nay tao đã nuốt trọn 40 công thức Toán 12 trên Math Reels. Hẹn gặp ở cổng trường Ngoại Thương!"
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; font-weight: 700;">
-          <span>Streak: ${state.quizStreak || 1} Ngày 🔥</span>
-          <span>toan12-pro.web.app</span>
-        </div>
-      </div>
-    `;
+  function openStory(id) {
+    const card = reelsFeed.querySelector(`.reel-card[data-id="${id}"]`);
+    if (!card || !storyCanvas) return;
 
-    renderAllMath(storyCardContainer);
-    storyExportModal.classList.add('active');
+    // Bảo đảm công thức đã được KaTeX render trước khi sao chép sang card story.
+    renderMath(card);
+
+    const title = card.querySelector('.reel-title');
+    const chapter = card.querySelector('.badge--chapter');
+    const formulaBox = card.querySelector('.formula-box .math-render');
+    const callout = card.querySelector('.callout.callout--info p');
+
+    storyCanvas.innerHTML = `
+      <div>
+        <div class="story-topline">
+          <span class="badge badge--chapter">${escHtml(chapter ? chapter.textContent : 'Toán 12')}</span>
+          <span class="story-brand">TOÁN 12 PRO</span>
+        </div>
+        <h3 class="story-title" style="margin-top:14px">${escHtml(title ? title.textContent : 'Công thức Toán 12')}</h3>
+        <div class="story-formula" style="margin-top:14px">${formulaBox ? formulaBox.innerHTML : ''}</div>
+      </div>
+
+      <div>
+        ${callout ? `<p class="story-quote">💡 ${escHtml(callout.textContent)}</p>` : ''}
+        <div class="story-foot" style="margin-top:14px">
+          <span>Chuỗi tốt nhất: ${state.bestStreak}</span>
+          <span>toan12pro</span>
+        </div>
+      </div>`;
+
+    // Đã render KaTeX sẵn trong card nên chỉ cần copy node, không render lại.
+    openOverlay(storyModal);
   }
 
-  if (storyCloseBtn) storyCloseBtn.addEventListener('click', () => storyExportModal.classList.remove('active'));
-  if (storyBackdrop) storyBackdrop.addEventListener('click', () => storyExportModal.classList.remove('active'));
-
+  const storyCloseBtn = $('storyCloseBtn');
+  const storyBackdrop = $('storyBackdrop');
+  const storySaveBtn = $('storySaveBtn');
+  if (storyCloseBtn) storyCloseBtn.addEventListener('click', () => { playSound('click'); closeOverlay(storyModal); });
+  if (storyBackdrop) storyBackdrop.addEventListener('click', () => closeOverlay(storyModal));
   if (storySaveBtn) {
     storySaveBtn.addEventListener('click', () => {
       playSound('success');
-      showToast('📸 Đã sao chép nội dung Story! Hãy chụp màn hình để đăng Instagram/TikTok.');
-      storyExportModal.classList.remove('active');
+      showToast('Dùng nút chụp màn hình của điện thoại để lưu ảnh này');
     });
   }
 
-  // ==========================================
-  // 13. INITIAL BOOTSTRAP
-  // ==========================================
+  /* ==========================================================================
+     16. TÀI KHOẢN: XUẤT / XOÁ DỮ LIỆU
+     ========================================================================== */
+  const exportDataBtn = $('exportDataBtn');
+  if (exportDataBtn) {
+    exportDataBtn.addEventListener('click', () => {
+      const backup = {
+        app: 'TOAN12PRO',
+        exportedAt: new Date().toISOString(),
+        memorized: [...state.memorizedIds],
+        bookmarked: [...state.bookmarkedIds],
+        streak: state.streak,
+        bestStreak: state.bestStreak
+      };
+      try {
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `toan12-tien-do-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        playSound('success');
+        showToast('Đã tải tệp sao lưu');
+      } catch (err) {
+        showToast('Không xuất được tệp trên trình duyệt này');
+      }
+    });
+  }
+
+  const resetAllDataBtn = $('resetAllDataBtn');
+  if (resetAllDataBtn) {
+    resetAllDataBtn.addEventListener('click', () => {
+      if (!window.confirm('Xóa toàn bộ tiến độ đã thuộc, danh sách đã lưu và chuỗi đúng?')) return;
+
+      state.memorizedIds.clear();
+      state.bookmarkedIds.clear();
+      state.streak = 0;
+      state.bestStreak = 0;
+      localStorage.removeItem(KEYS.MEMORIZED);
+      localStorage.removeItem(KEYS.BOOKMARKED);
+      localStorage.removeItem(KEYS.STREAK);
+      localStorage.removeItem(KEYS.BEST);
+
+      playSound('click');
+      renderHandbook();
+      updateProgress();
+      showToast('Đã xóa toàn bộ tiến độ');
+    });
+  }
+
+  const copyGitCmdBtn = $('copyGitCmdBtn');
+  const gitCommandBlock = $('gitCommandBlock');
+  if (copyGitCmdBtn && gitCommandBlock) {
+    copyGitCmdBtn.addEventListener('click', () => {
+      copyToClipboard(gitCommandBlock.textContent.trim(), 'Đã sao chép các lệnh Git');
+    });
+  }
+
+  /* ==========================================================================
+     17. PHÍM TẮT TOÀN CỤC
+     ========================================================================== */
+  window.addEventListener('keydown', (e) => {
+    if (e.target.closest('input, select, textarea')) return;
+
+    if (state.activeTab === 'paneFlashcard') {
+      if (e.key === 'ArrowRight') { e.preventDefault(); nextFlashcard(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prevFlashcard(); }
+    }
+
+    if (e.key === 'Escape') {
+      if (drawer && !drawer.hidden) closeOverlay(drawer);
+      if (storyModal && !storyModal.hidden) closeOverlay(storyModal);
+    }
+  });
+
+  /* ==========================================================================
+     18. FIT LẠI CÔNG THỨC KHI ĐỔI KÍCH THƯỚC / XOAY MÁY / FONT TẢI XONG
+     ========================================================================== */
+  let refitTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(refitTimer);
+    refitTimer = setTimeout(() => {
+      const pane = $(state.activeTab);
+      if (pane) fitFormulas(pane);
+    }, 200);
+  });
+
+  window.addEventListener('orientationchange', () => {
+    const pane = $(state.activeTab);
+    if (pane) fitFormulas(pane);
+  });
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready
+      .then(() => {
+        const pane = $(state.activeTab);
+        if (pane) fitFormulas(pane);
+      })
+      .catch(() => {});
+  }
+
+  /* ==========================================================================
+     19. KHỞI ĐỘNG
+     ========================================================================== */
+  applyTheme(state.theme);
+  applySound(state.soundEnabled);
   renderChapterChips();
-  renderHandbookList();
-  renderAllMath();
-  initCyberMathCanvas();
+  renderHandbook();
+  updateProgress();
+  switchTab('paneReels', { silent: true });
 });

@@ -3,499 +3,434 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
-  <title>Sổ Tay & Luyện Nhớ Công Thức Toán 12 | Ôn Thi THPT Quốc Gia</title>
-  
+  <meta name="color-scheme" content="dark light">
+  <title>TOÁN 12 PRO — Sổ tay &amp; Luyện nhớ công thức</title>
+
   <!-- SEO & Social Meta -->
-  <meta name="description" content="Hệ thống sổ tay và luyện nhớ full công thức Toán 12 ôn thi tốt nghiệp THPT Quốc Gia. Tối ưu di động, thẻ Flashcard 3D, trắc nghiệm ghi nhớ, tra cứu nhanh.">
-  <meta name="theme-color" content="#4f46e5">
+  <meta name="description" content="Sổ tay và luyện nhớ full công thức Toán 12 ôn thi tốt nghiệp THPT. Tra cứu nhanh, flashcard, trắc nghiệm phản xạ và Math Reels.">
+  <meta name="theme-color" content="#0B0F19">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Toán 12 Pro">
 
-  <!-- Google Fonts: Be Vietnam Pro, Outfit, Space Grotesk & JetBrains Mono -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230B0F19'/%3E%3Cpath d='M9 22 16 9l7 13' stroke='%2338BDF8' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+  <!-- Fonts: Be Vietnam Pro (dấu tiếng Việt đầy đủ) + JetBrains Mono (số & công thức) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <!-- KaTeX for Beautiful Math Formula Rendering -->
+  <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
 
-  <!-- Main Stylesheet -->
   <link rel="stylesheet" href="style.css">
 </head>
-<body data-theme="dark">
-  <!-- Ambient Cyber Background Grid & Glow -->
-  <div class="cyber-ambient-bg" aria-hidden="true"></div>
 
-  <!-- App Header (Modern Sleek Header) -->
-  <header class="app-header">
-    <div class="header-container">
-      <div class="logo-area">
-        <div class="logo-badge">
-          <span class="badge-icon">📐</span>
-        </div>
-        <div class="logo-text">
-          <div class="logo-title-row">
-            <h1>TOÁN 12</h1>
-            <span class="pro-tag">PRO</span>
-          </div>
-          <span class="sub-title">Sổ tay & Luyện nhớ công thức THPTQG</span>
-        </div>
-      </div>
+<body data-theme="dark" data-tab="paneReels">
 
-      <div class="header-actions">
-        <!-- Progress Mini Badge -->
-        <div class="progress-pill" id="globalProgressPill" title="Tiến độ học thuộc">
-          <span class="progress-icon">🎯</span>
-          <span class="progress-text" id="globalProgressText">0%</span>
-        </div>
-
-        <!-- Sound Toggle -->
-        <button class="icon-btn" id="soundToggleBtn" aria-label="Bật/Tắt âm thanh hiệu ứng" title="Âm thanh hiệu ứng">
-          <span class="sound-icon">🔊</span>
-        </button>
-
-        <!-- Theme Toggle -->
-        <button class="icon-btn" id="themeToggleBtn" aria-label="Chuyển chế độ sáng/tối" title="Sáng/Tối">
-          <span class="theme-icon">🌙</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Sticky Search & Filter Bar -->
-  <div class="search-filter-wrapper">
-    <div class="search-box">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Truy vấn ma trận công thức (đạo hàm, tiệm cận, Oxyz, logarit, Simson...)" autocomplete="off" spellcheck="false">
-      <button class="clear-btn" id="clearSearchBtn" aria-label="Xóa tìm kiếm" style="display: none;">✕</button>
-      <span class="search-shortcut" title="Phím tắt">PRO</span>
-    </div>
-
-    <!-- Chapter Chips Horizontal Scroll -->
-    <div class="chips-scroll-container" id="chapterChips">
-      <!-- Generated via JavaScript -->
-    </div>
-
-    <!-- Quick Status Filter -->
-    <div class="status-filter-bar">
-      <button class="status-btn active" data-filter="all"><span class="dot-indicator"></span> Tất cả (<span id="countAll">0</span>)</button>
-      <button class="status-btn" data-filter="unmemorized"><span class="dot-indicator unmemorized"></span> ⏳ Chưa thuộc (<span id="countUnmemorized">0</span>)</button>
-      <button class="status-btn" data-filter="memorized"><span class="dot-indicator memorized"></span> ✅ Đã thuộc (<span id="countMemorized">0</span>)</button>
-      <button class="status-btn" data-filter="bookmarked"><span class="dot-indicator bookmarked"></span> ⭐ Yêu thích (<span id="countBookmarked">0</span>)</button>
-    </div>
+  <!-- ==========================================================
+       AMBIENT BACKGROUND (thuần CSS, không dùng canvas)
+       ========================================================== -->
+  <div class="ambient" aria-hidden="true">
+    <span class="ambient-glow ambient-glow--top"></span>
+    <span class="ambient-glow ambient-glow--bottom"></span>
   </div>
 
-  <!-- Main Viewports Container -->
-  <main class="main-content">
-    
-    <!-- ==============================================
-         TAB 1: SỔ TAY TRA CỨU (HANDBOOK / CHEAT SHEET)
-         ============================================== -->
-    <section class="tab-pane active" id="paneHandbook" role="tabpanel">
-      <!-- CYBER HUD MATH HERO BANNER -->
-      <div class="cyber-hero-banner">
-        <!-- Floating Math Particles Canvas -->
-        <canvas id="mathMatrixCanvas" class="hero-canvas"></canvas>
-        <div class="cyber-grid-overlay" aria-hidden="true"></div>
-        <div class="cyber-radial-glow" aria-hidden="true"></div>
+  <div class="app-shell" id="appShell">
 
-        <div class="cyber-banner-content">
-          <!-- Top Cyber Status Bar -->
-          <div class="cyber-status-row">
-            <span class="cyber-tag-pulse">
-              <span class="pulse-dot"></span> MA TRẬN TOÁN 12 PRO • SYSTEM ONLINE
-            </span>
-            <span class="cyber-tag-target">
-              🎯 MỤC TIÊU: ĐẠI PHÁ 9+ THPT QUỐC GIA
-            </span>
-          </div>
+    <!-- ==========================================================
+         TOP BAR
+         ========================================================== -->
+    <header class="topbar">
+      <div class="topbar__inner">
 
-          <!-- Main Hero Layout: Left Content & Right 3D Visual Hologram -->
-          <div class="cyber-hero-main">
-            <div class="cyber-hero-info">
-              <h2 class="cyber-glitch-title">
-                TRẠM GIA TỐC CÔNG THỨC TOÁN 12
-              </h2>
-              <p class="cyber-subtitle">
-                Giải mã toàn bộ hệ thống Giải Tích & Hình Học Không Gian với trực quan hóa KaTeX 3D, thẻ Flashcard phản xạ thần tốc và bộ câu hỏi trắc nghiệm thực chiến.
-              </p>
+        <button class="brand" id="brandHomeBtn" type="button" aria-label="Về trang chủ">
+          <span class="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 18 12 6l6 12"/>
+              <path d="M9 14.5h6"/>
+            </svg>
+          </span>
+          <span class="brand__text">
+            <span class="brand__name">TOÁN 12 <em>PRO</em></span>
+            <span class="brand__sub">Ôn thi THPT Quốc gia</span>
+          </span>
+        </button>
 
-              <!-- Quick Cyber Stats Row -->
-              <div class="cyber-metrics-grid">
-                <div class="metric-card">
-                  <div class="metric-top">
-                    <span class="metric-label">CÔNG THỨC CỐT LÕI</span>
-                    <span class="metric-icon">📐</span>
-                  </div>
-                  <div class="metric-value" id="hudTotalFormulas">39+</div>
-                  <div class="metric-bar"><div class="bar-fill" style="width: 100%;"></div></div>
-                </div>
+        <div class="topbar__actions">
+          <span class="streak-chip" id="streakChipTop" title="Chuỗi trả lời đúng hiện tại">
+            <span class="streak-chip__flame" aria-hidden="true">🔥</span>
+            <span class="js-streak">0</span>
+          </span>
 
-                <div class="metric-card">
-                  <div class="metric-top">
-                    <span class="metric-label">TỈ LỆ THÔNG THẠO</span>
-                    <span class="metric-icon">⚡</span>
-                  </div>
-                  <div class="metric-value highlight" id="hudMemorizedRatio">0%</div>
-                  <div class="metric-bar"><div class="bar-fill cyan" id="hudProgressBar" style="width: 0%;"></div></div>
-                </div>
-
-                <div class="metric-card">
-                  <div class="metric-top">
-                    <span class="metric-label">CẤP CHIẾN BINH</span>
-                    <span class="metric-icon">🏆</span>
-                  </div>
-                  <div class="metric-value gold" id="hudMasteryRank">TẬP SỰ</div>
-                  <div class="metric-bar"><div class="bar-fill gold" id="hudRankBar" style="width: 10%;"></div></div>
-                </div>
-              </div>
-
-              <!-- Quick Hero Action Buttons -->
-              <div class="cyber-hero-actions">
-                <button class="cyber-btn primary" id="heroStartPracticeBtn">
-                  <span class="btn-icon">⚡</span> BẮT ĐẦU LUYỆN PHẢN XẠ
-                </button>
-                <button class="cyber-btn secondary" id="heroFilterKeyBtn">
-                  <span class="btn-icon">💎</span> CÔNG THỨC TÍNH NHANH 9+
-                </button>
-              </div>
-
-              <!-- Hidden backwards compatibility elements for safe querySelectors -->
-              <div style="display: none;" aria-hidden="true">
-                <span id="statCountText">0 / 0</span>
-                <span id="percentText">0%</span>
-                <svg><path id="circleProgress"></path></svg>
-              </div>
-            </div>
-
-            <!-- Right 3D Holographic Display Card -->
-            <div class="cyber-hologram-card">
-              <div class="holo-frame">
-                <div class="holo-corner top-left"></div>
-                <div class="holo-corner top-right"></div>
-                <div class="holo-corner bottom-left"></div>
-                <div class="holo-corner bottom-right"></div>
-                <img src="assets/cyber_math_hero.jpg" alt="3D Cyber Math Hologram Oxyz" class="holo-image" loading="lazy">
-                <div class="holo-scanline"></div>
-                <div class="holo-overlay-info">
-                  <div class="holo-data-badge">
-                    <span class="holo-dot"></span>
-                    <span>HOLOGRAM Oxyz • $\vec{u} \times \vec{v}$</span>
-                  </div>
-                  <span class="holo-tech-code">SYS://MATH.12.PRO</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Formula Cards List Grid -->
-      <div class="formula-grid" id="formulaList">
-        <!-- Rendered via JavaScript -->
-      </div>
-
-      <!-- Empty State -->
-      <div class="empty-state" id="emptyState" style="display: none;">
-        <div class="empty-icon">🔎</div>
-        <h3>Không tìm thấy công thức nào</h3>
-        <p>Hãy thử tìm bằng từ khóa khác hoặc bấm "Tất cả" để xem toàn bộ.</p>
-        <button class="primary-btn" id="resetFilterBtn">Xem tất cả công thức</button>
-      </div>
-    </section>
-
-    <!-- ==============================================
-         TAB 2: THẺ FLASHCARD HỌC THUỘC (SPACED REPETITION)
-         ============================================== -->
-    <section class="tab-pane" id="paneFlashcard" role="tabpanel">
-      <div class="flashcard-section">
-        <div class="flashcard-header">
-          <div class="fc-counter">Thẻ <strong id="fcCurrentIndex">1</strong> / <span id="fcTotalCount">0</span></div>
-          <div class="fc-filter-select">
-            <select id="fcChapterSelect" aria-label="Chọn chương Flashcard">
-              <option value="all">Tất cả các chương</option>
+          <label class="pill-select" for="reelsChapterSelect">
+            <span class="visually-hidden">Chọn chuyên đề</span>
+            <select id="reelsChapterSelect">
+              <option value="all">Tất cả chuyên đề</option>
             </select>
-          </div>
+            <svg class="pill-select__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </label>
         </div>
 
-        <!-- Progress Bar for Flashcards -->
-        <div class="fc-progress-bar">
-          <div class="fc-progress-fill" id="fcProgressFill" style="width: 0%;"></div>
-        </div>
-
-        <!-- 3D Flip Card Container -->
-        <div class="flashcard-container" id="flashcardElement" tabindex="0" role="button" aria-label="Lật thẻ ghi nhớ">
-          <div class="flashcard-inner" id="flashcardInner">
-            <!-- Front Face: Question / Name -->
-            <div class="flashcard-face flashcard-front">
-              <div class="card-top-tag" id="fcFrontChapter">Chương 1</div>
-              <div class="card-prompt">
-                <span class="prompt-badge">ĐỀ BÀI / CÂU HỎI</span>
-                <h3 id="fcFrontTitle">Tiêu đề công thức</h3>
-                <p id="fcFrontDesc">Mô tả câu hỏi...</p>
-              </div>
-              <div class="card-hint">
-                <span class="tap-hint">👆 Chạm hoặc ấn phím Space để xem công thức</span>
-              </div>
-            </div>
-
-            <!-- Back Face: Formula Answer & Mnemonics -->
-            <div class="flashcard-face flashcard-back">
-              <div class="card-top-tag" id="fcBackChapter">Chương 1</div>
-              <div class="card-answer">
-                <span class="answer-badge">CÔNG THỨC CHUẨN</span>
-                <div class="math-display-large" id="fcBackMath">
-                  <!-- LaTeX rendered here -->
-                </div>
-                <div class="card-mnemonic-box" id="fcBackMnemonic">
-                  <!-- Mẹo nhớ -->
-                </div>
-              </div>
-              <div class="card-hint">
-                <span class="tap-hint">👆 Chạm để lật lại mặt trước</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Flashcard Controls -->
-        <div class="fc-controls">
-          <button class="fc-nav-btn" id="fcPrevBtn" aria-label="Thẻ trước">⬅️</button>
-          <button class="fc-action-btn fc-btn-fail" id="fcFailBtn">
-            <span>❌</span> Chưa nhớ
-          </button>
-          <button class="fc-action-btn fc-btn-pass" id="fcPassBtn">
-            <span>✅</span> Đã thuộc!
-          </button>
-          <button class="fc-nav-btn" id="fcNextBtn" aria-label="Thẻ sau">➡️</button>
-        </div>
-
-        <div class="fc-keyboard-tip">
-          💡 <strong>Mẹo di động:</strong> Vuốt sang trái/phải để chuyển thẻ. Chạm vào thẻ để lật xem đáp án.
-        </div>
       </div>
-    </section>
+    </header>
 
-    <!-- ==============================================
-         TAB 3: LUYỆN TRÍ NHỚ (QUIZ TRẮC NGHIỆM)
-         ============================================== -->
-    <section class="tab-pane" id="paneQuiz" role="tabpanel">
-      <div class="quiz-container">
-        <!-- Quiz Header & Streak -->
-        <div class="quiz-top-bar">
-          <div class="streak-badge" id="quizStreakBadge">
-            🔥 Chuỗi đúng: <strong id="quizStreakCount">0</strong>
-          </div>
-          <div class="score-badge">
-            Điểm: <strong id="quizScoreCount">0</strong>
-          </div>
-        </div>
+    <!-- ==========================================================
+         TAB STACK
+         ========================================================== -->
+    <main class="tab-stack" id="tabStack">
 
-        <!-- Quiz Card -->
-        <div class="quiz-card" id="quizCard">
-          <div class="quiz-meta">
-            <span class="quiz-chapter-tag" id="quizChapterTag">Khảo sát hàm số</span>
-            <span class="quiz-index" id="quizIndexText">Câu 1</span>
-          </div>
-
-          <h3 class="quiz-question" id="quizQuestionText">Nội dung câu hỏi đang tải...</h3>
-
-          <div class="quiz-options" id="quizOptionsContainer">
-            <!-- Rendered via JS -->
-          </div>
-
-          <!-- Explanation Box -->
-          <div class="quiz-explain-box" id="quizExplainBox" style="display: none;">
-            <div class="explain-title" id="explainTitle">💡 Giải thích chi tiết:</div>
-            <div class="explain-content" id="explainContent"></div>
-            <button class="primary-btn next-quiz-btn" id="quizNextBtn">Câu tiếp theo ➔</button>
-          </div>
-        </div>
-
-        <!-- Quiz Restart -->
-        <div class="quiz-footer">
-          <button class="secondary-btn" id="quizRestartBtn">🔄 Làm lại bài trắc nghiệm mới</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==============================================
-         TAB 4: HƯỚNG DẪN UP GITHUB & TIẾN ĐỘ
-         ============================================== -->
-    <section class="tab-pane" id="paneDeploy" role="tabpanel">
-      <div class="guide-container">
-        <div class="guide-card">
-          <div class="guide-header">
-            <span class="guide-icon">🚀</span>
-            <h3>Hướng Dẫn Đưa Lên GitHub Pages (1 Click Có Link Chạy Mọi Máy)</h3>
-          </div>
-          <p class="guide-intro">
-            Dự án này được thiết kế theo dạng <strong>Static Web App thuần</strong> (100% không cần cài đặt Node.js hay Build server phức tạp). Bạn chỉ cần up thư mục này lên GitHub là sẽ có ngay một đường link chạy vĩnh viễn trên bất kỳ điện thoại hay máy tính nào!
-          </p>
-
-          <div class="guide-steps">
-            <div class="step-item">
-              <div class="step-num">1</div>
-              <div class="step-content">
-                <h4>Tạo Repository mới trên GitHub</h4>
-                <p>Truy cập <a href="https://github.com/new" target="_blank" rel="noopener">github.com/new</a>, đặt tên repository (ví dụ: <code>toan12-formula</code>), chọn <strong>Public</strong>.</p>
-              </div>
-            </div>
-
-            <div class="step-item">
-              <div class="step-num">2</div>
-              <div class="step-content">
-                <h4>Đẩy mã nguồn lên GitHub</h4>
-                <p>Mở PowerShell tại thư mục này và chạy các lệnh:</p>
-                <div class="code-block-box">
-                  <code>git init<br>git add .<br>git commit -m "Full Cong Thuc Toan 12 App"<br>git branch -M main<br>git remote add origin https://github.com/TEN_CUA_BAN/toan12-formula.git<br>git push -u origin main</code>
-                  <button class="copy-code-btn" id="copyGitCmdBtn">Sao chép lệnh</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="step-item">
-              <div class="step-num">3</div>
-              <div class="step-content">
-                <h4>Kích hoạt GitHub Pages</h4>
-                <p>Vào <strong>Settings</strong> của repo trên GitHub ➔ Chọn mục <strong>Pages</strong> (menu bên trái) ➔ Tại phần <strong>Branch</strong>, chọn <code>main</code> và bấm <strong>Save</strong>.</p>
-              </div>
-            </div>
-
-            <div class="step-item">
-              <div class="step-num">4</div>
-              <div class="step-content">
-                <h4>Nhận link chia sẻ cho cả lớp!</h4>
-                <p>Sau 1 phút, GitHub sẽ cấp cho bạn một đường link dạng:</p>
-                <div class="link-preview-box">
-                  <code>https://TEN_CUA_BAN.github.io/toan12-formula/</code>
-                </div>
-                <p class="tip-text">🎉 Bất kỳ ai mở link này trên điện thoại (iPhone/Android) hay máy tính đều xem mượt mà, lưu tiến độ học tập riêng của từng bạn!</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Local Data Management Card -->
-        <div class="guide-card">
-          <div class="guide-header">
-            <span class="guide-icon">💾</span>
-            <h3>Quản lý dữ liệu học tập cá nhân</h3>
-          </div>
-          <p>Dữ liệu công thức đã thuộc và yêu thích được lưu tự động trên trình duyệt điện thoại của bạn.</p>
-          <div class="data-actions-row">
-            <button class="secondary-btn" id="exportDataBtn">📥 Xuất dữ liệu học tập</button>
-            <button class="danger-btn" id="resetAllDataBtn">🗑️ Xóa tiến độ làm lại từ đầu</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==============================================
-         TAB 5: MATH REELS (TIKTOK / DOOMSCROLL FEED)
-         ============================================== -->
-    <!-- ==============================================
-         TAB 5: MATH REELS (TIKTOK / DOOMSCROLL FEED)
-         ============================================== -->
-    <section class="tab-pane" id="paneReels" role="tabpanel">
-      <div class="reels-stage-wrapper">
-        
-        <!-- Clean Minimal Top Header Overlay -->
-        <div class="reels-hud-header">
-          <div class="reels-topic-pill">
-            <select id="reelsChapterSelect" class="reels-chapter-dropdown" aria-label="Lọc chuyên đề">
-              <option value="all">Tất cả chuyên đề ▾</option>
-            </select>
-          </div>
-
-          <div class="reels-streak-badge" id="reelsStreakBadge" title="Chuỗi ngày ôn luyện">
-            <span>🔥</span>
-            <span id="reelsStreakCount">1</span>
-          </div>
-        </div>
-
-        <!-- Vertical Snap Scroll Reel Container -->
+      <!-- ---------------------------------------------------------
+           TAB 1 · TRANG CHỦ / MATH REELS
+           --------------------------------------------------------- -->
+      <section class="tab-pane tab-pane--reels active" id="paneReels" role="tabpanel" aria-label="Math Reels">
         <div class="reels-feed" id="reelsFeed">
-          <!-- Dynamically populated Reel cards -->
+          <!-- renderReelsFeed() -->
+        </div>
+        <p class="reels-hint" id="reelsHint">Vuốt lên để xem công thức tiếp theo</p>
+      </section>
+
+      <!-- ---------------------------------------------------------
+           TAB 2 · TRA CỨU
+           --------------------------------------------------------- -->
+      <section class="tab-pane" id="paneHandbook" role="tabpanel" aria-label="Sổ tay tra cứu">
+        <div class="pane-toolbar">
+          <div class="search-box">
+            <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>
+            </svg>
+            <input type="search" id="searchInput" placeholder="Tìm: đạo hàm, tiệm cận, Oxyz, logarit…" autocomplete="off" spellcheck="false" enterkeyhint="search">
+            <button class="search-box__clear" id="clearSearchBtn" type="button" aria-label="Xóa tìm kiếm" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+
+          <div class="chip-row" id="chapterChips" role="tablist" aria-label="Chuyên đề">
+            <!-- renderChapterChips() -->
+          </div>
+
+          <div class="filter-row">
+            <button class="filter-chip active" type="button" data-filter="all">Tất cả <b id="countAll">0</b></button>
+            <button class="filter-chip" type="button" data-filter="unmemorized">Chưa thuộc <b id="countUnmemorized">0</b></button>
+            <button class="filter-chip" type="button" data-filter="memorized">Đã thuộc <b id="countMemorized">0</b></button>
+            <button class="filter-chip" type="button" data-filter="bookmarked">Đã lưu <b id="countBookmarked">0</b></button>
+          </div>
         </div>
 
-      </div>
-    </section>
+        <div class="pane-body">
+          <div class="formula-list" id="formulaList">
+            <!-- renderHandbookList() -->
+          </div>
 
-  </main>
-
-  <!-- Reels Comment Drawer (Bottom Sheet) -->
-  <div class="reels-comment-drawer" id="reelsCommentDrawer">
-    <div class="drawer-backdrop" id="drawerBackdrop"></div>
-    <div class="drawer-panel">
-      <div class="drawer-pull-bar"></div>
-      <div class="drawer-header">
-        <div class="drawer-title-group">
-          <span class="drawer-badge">💬 2k7 CHÉM GIÓ</span>
-          <h4 id="drawerFormulaName">Đạo hàm hàm số</h4>
+          <div class="empty-state" id="emptyState" hidden>
+            <span class="empty-state__icon" aria-hidden="true">🔎</span>
+            <h3>Không tìm thấy công thức</h3>
+            <p>Thử từ khóa khác, hoặc xóa bộ lọc để xem toàn bộ sổ tay.</p>
+            <button class="btn btn--primary" id="resetFilterBtn" type="button">Xem tất cả công thức</button>
+          </div>
         </div>
-        <button class="drawer-close-btn" id="drawerCloseBtn" aria-label="Đóng bình luận">✕</button>
+      </section>
+
+      <!-- ---------------------------------------------------------
+           TAB 3 · FLASHCARD
+           --------------------------------------------------------- -->
+      <section class="tab-pane" id="paneFlashcard" role="tabpanel" aria-label="Flashcard ghi nhớ">
+        <div class="pane-body pane-body--centered">
+
+          <div class="fc-topline">
+            <span class="fc-counter">Thẻ <b id="fcCurrentIndex">1</b> / <span id="fcTotalCount">0</span></span>
+            <label class="mini-select" for="fcChapterSelect">
+              <span class="visually-hidden">Lọc chương</span>
+              <select id="fcChapterSelect">
+                <option value="all">Tất cả chương</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="progress-track" aria-hidden="true">
+            <span class="progress-fill" id="fcProgressFill"></span>
+          </div>
+
+          <div class="flashcard" id="flashcardElement" tabindex="0" role="button" aria-label="Chạm để lật thẻ">
+            <div class="flashcard__inner" id="flashcardInner">
+
+              <div class="flashcard__face flashcard__face--front">
+                <span class="badge badge--chapter" id="fcFrontChapter">Chương</span>
+                <div class="flashcard__content">
+                  <span class="kicker">Câu hỏi</span>
+                  <h3 class="flashcard__title" id="fcFrontTitle">Tiêu đề</h3>
+                  <p class="flashcard__desc" id="fcFrontDesc">Mô tả</p>
+                </div>
+                <span class="flashcard__hint">Chạm để xem công thức</span>
+              </div>
+
+              <div class="flashcard__face flashcard__face--back">
+                <span class="badge badge--chapter" id="fcBackChapter">Chương</span>
+                <div class="flashcard__content">
+                  <span class="kicker">Công thức chuẩn</span>
+                  <div class="math-block" id="fcBackMath"><!-- KaTeX --></div>
+                  <div class="callout callout--info" id="fcBackMnemonic"><!-- mẹo nhớ --></div>
+                </div>
+                <span class="flashcard__hint">Chạm để lật lại</span>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="fc-controls">
+            <button class="icon-btn icon-btn--ghost" id="fcPrevBtn" type="button" aria-label="Thẻ trước">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
+            </button>
+            <button class="btn btn--danger" id="fcFailBtn" type="button">Chưa nhớ</button>
+            <button class="btn btn--success" id="fcPassBtn" type="button">Đã thuộc</button>
+            <button class="icon-btn icon-btn--ghost" id="fcNextBtn" type="button" aria-label="Thẻ sau">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
+            </button>
+          </div>
+
+          <p class="hint-text">Vuốt ngang để đổi thẻ · Chạm để lật · Phím <kbd>Space</kbd></p>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------
+           TAB 4 · LUYỆN TẬP
+           --------------------------------------------------------- -->
+      <section class="tab-pane" id="paneQuiz" role="tabpanel" aria-label="Luyện tập trắc nghiệm">
+        <div class="pane-body">
+
+          <div class="quiz-topline">
+            <span class="stat-chip"><span aria-hidden="true">🔥</span> Chuỗi đúng <b id="quizStreakCount">0</b></span>
+            <span class="stat-chip stat-chip--accent">Điểm <b id="quizScoreCount">0</b></span>
+          </div>
+
+          <div class="quiz-progress">
+            <div class="progress-track" aria-hidden="true"><span class="progress-fill" id="quizProgressFill"></span></div>
+            <span class="quiz-progress__label" id="quizIndexText">Câu 1</span>
+          </div>
+
+          <article class="quiz-card" id="quizCard">
+            <div class="timer" id="quizTimer" aria-hidden="true"><span class="timer__fill" id="quizTimerBar"></span></div>
+
+            <span class="badge badge--chapter" id="quizChapterTag">Chuyên đề</span>
+            <h3 class="quiz-question" id="quizQuestionText">Đang tải câu hỏi…</h3>
+
+            <div class="option-list" id="quizOptionsContainer">
+              <!-- renderQuizCard() -->
+            </div>
+
+            <div class="callout callout--success quiz-explain" id="quizExplainBox" hidden>
+              <span class="callout-label">Giải thích</span>
+              <div class="quiz-explain__content" id="explainContent"></div>
+              <button class="btn btn--primary btn--block" id="quizNextBtn" type="button">Câu tiếp theo</button>
+            </div>
+          </article>
+
+          <button class="btn btn--ghost btn--block" id="quizRestartBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+            Làm đề mới
+          </button>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------
+           TAB 5 · TÀI KHOẢN
+           --------------------------------------------------------- -->
+      <section class="tab-pane" id="paneAccount" role="tabpanel" aria-label="Tài khoản và tiến độ">
+        <div class="pane-body">
+
+          <div class="card card--hero">
+            <span class="kicker">Tiến độ học tập</span>
+            <div class="progress-hero">
+              <span class="progress-hero__value" id="accountProgressText">0%</span>
+              <span class="progress-hero__rank" id="accountRank">Tân binh</span>
+            </div>
+            <div class="progress-track progress-track--lg" aria-hidden="true">
+              <span class="progress-fill" id="accountProgressBar"></span>
+            </div>
+            <p class="card__note" id="accountProgressNote">Bắt đầu luyện tập để mở khoá tiến độ.</p>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-tile">
+              <span class="stat-tile__label">Đã thuộc</span>
+              <span class="stat-tile__value" id="accountMemorized">0</span>
+            </div>
+            <div class="stat-tile">
+              <span class="stat-tile__label">Tổng công thức</span>
+              <span class="stat-tile__value" id="accountTotal">0</span>
+            </div>
+            <div class="stat-tile">
+              <span class="stat-tile__label">Đã lưu</span>
+              <span class="stat-tile__value" id="accountBookmarked">0</span>
+            </div>
+            <div class="stat-tile">
+              <span class="stat-tile__label">Chuỗi tốt nhất</span>
+              <span class="stat-tile__value" id="accountStreak">0</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card__title">Cài đặt</h3>
+            <div class="setting-row">
+              <div class="setting-row__text">
+                <span class="setting-row__name">Giao diện tối</span>
+                <span class="setting-row__desc">Dịu mắt khi ôn bài ban đêm</span>
+              </div>
+              <button class="switch" id="themeToggleBtn" type="button" role="switch" aria-checked="true" aria-label="Bật tắt giao diện tối">
+                <span class="switch__knob"></span>
+              </button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-row__text">
+                <span class="setting-row__name">Âm thanh phản hồi</span>
+                <span class="setting-row__desc">Tiếng bấm, lật thẻ, đúng/sai</span>
+              </div>
+              <button class="switch" id="soundToggleBtn" type="button" role="switch" aria-checked="true" aria-label="Bật tắt âm thanh">
+                <span class="switch__knob"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card__title">Dữ liệu học tập</h3>
+            <p class="card__note">Tiến độ được lưu ngay trên trình duyệt này, không gửi lên máy chủ nào.</p>
+            <div class="btn-row">
+              <button class="btn btn--ghost" id="exportDataBtn" type="button">Xuất tệp sao lưu</button>
+              <button class="btn btn--danger-ghost" id="resetAllDataBtn" type="button">Xóa toàn bộ tiến độ</button>
+            </div>
+          </div>
+
+          <details class="card details">
+            <summary class="details__summary">
+              <span>Chia sẻ app này cho cả lớp</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <div class="details__body">
+              <ol class="steps">
+                <li><b>Tạo repository</b> tại <code>github.com/new</code>, chọn <b>Public</b>.</li>
+                <li><b>Đẩy mã nguồn</b> lên bằng các lệnh sau:</li>
+              </ol>
+              <div class="code-block">
+                <pre id="gitCommandBlock">git init
+git add .
+git commit -m "Full Cong Thuc Toan 12 App"
+git branch -M main
+git remote add origin https://github.com/TEN_CUA_BAN/toan12-formula.git
+git push -u origin main</pre>
+                <button class="btn btn--ghost btn--sm" id="copyGitCmdBtn" type="button">Sao chép</button>
+              </div>
+              <ol class="steps" start="3">
+                <li>Vào <b>Settings → Pages</b>, chọn branch <code>main</code>, bấm <b>Save</b>.</li>
+                <li>Sau ~1 phút bạn có link dạng <code>https://TEN_CUA_BAN.github.io/toan12-formula/</code></li>
+              </ol>
+            </div>
+          </details>
+
+          <p class="footer-note">TOÁN 12 PRO · Bản dựng cho học sinh ôn thi tốt nghiệp</p>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ==========================================================
+         BOTTOM NAVIGATION
+         ========================================================== -->
+    <nav class="bottom-nav" id="bottomNav" aria-label="Điều hướng chính">
+      <button class="nav-item" type="button" data-tab="paneReels" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="4.5"/><path d="M10.4 9.2 15.5 12l-5.1 2.8z"/>
+        </svg>
+        <span>Trang chủ</span>
+      </button>
+      <button class="nav-item" type="button" data-tab="paneHandbook">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.2A2.4 2.4 0 0 1 6.4 16.8H20"/><path d="M6.4 3H20v18H6.4A2.4 2.4 0 0 1 4 18.6V5.4A2.4 2.4 0 0 1 6.4 3z"/>
+        </svg>
+        <span>Tra cứu</span>
+      </button>
+      <button class="nav-item" type="button" data-tab="paneFlashcard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3 21 8l-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/>
+        </svg>
+        <span>Flashcard</span>
+      </button>
+      <button class="nav-item" type="button" data-tab="paneQuiz">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>
+        </svg>
+        <span>Luyện tập</span>
+      </button>
+      <button class="nav-item" type="button" data-tab="paneAccount">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5c0-3.6 3.4-5.6 7.5-5.6s7.5 2 7.5 5.6"/>
+        </svg>
+        <span>Tài khoản</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ==========================================================
+       COMMENT SHEET
+       ========================================================== -->
+  <div class="sheet" id="reelsCommentDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerFormulaName" hidden>
+    <div class="sheet__backdrop" id="drawerBackdrop"></div>
+    <div class="sheet__panel">
+      <span class="sheet__grabber" aria-hidden="true"></span>
+
+      <header class="sheet__header">
+        <div class="sheet__heading">
+          <span class="kicker">Thảo luận</span>
+          <h4 id="drawerFormulaName">Công thức</h4>
+        </div>
+        <button class="icon-btn icon-btn--ghost" id="drawerCloseBtn" type="button" aria-label="Đóng thảo luận">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+
+      <div class="sheet__stream" id="drawerCommentsStream">
+        <!-- renderComments() -->
       </div>
 
-      <div class="drawer-comments-stream" id="drawerCommentsStream">
-        <!-- Rendered comments -->
-      </div>
-
-      <form class="drawer-input-bar" id="commentSubmitForm">
-        <input type="text" id="commentInputField" placeholder="Viết bí kíp hoặc cảm nghĩ của bạn..." maxlength="120" autocomplete="off">
-        <button type="submit" class="comment-send-btn" id="commentSendBtn">Gửi</button>
+      <form class="composer" id="commentSubmitForm" autocomplete="off">
+        <input type="text" id="commentInputField" placeholder="Viết bình luận…" maxlength="160" enterkeyhint="send" aria-label="Nội dung bình luận">
+        <button class="composer__send" id="commentSendBtn" type="submit">Gửi</button>
       </form>
     </div>
   </div>
 
-  <!-- Flex Story Modal (Instagram / Facebook 9:16 Card) -->
-  <div class="story-export-modal" id="storyExportModal">
-    <div class="modal-backdrop" id="storyBackdrop"></div>
-    <div class="story-modal-box">
-      <button class="story-close-btn" id="storyCloseBtn">✕</button>
-      <div class="story-card-canvas-container" id="storyCardContainer">
-        <!-- Story preview rendered here -->
-      </div>
-      <div class="story-actions-footer">
-        <button class="primary-btn story-save-btn" id="storySaveBtn">
-          <span>📸</span> Tải Ảnh Đăng Story
+  <!-- ==========================================================
+       STORY SHARE MODAL (9:16)
+       ========================================================== -->
+  <div class="modal" id="storyExportModal" role="dialog" aria-modal="true" aria-label="Chia sẻ công thức" hidden>
+    <div class="modal__backdrop" id="storyBackdrop"></div>
+    <div class="modal__box">
+      <header class="modal__header">
+        <span class="kicker">Chia sẻ lên Story</span>
+        <button class="icon-btn icon-btn--ghost" id="storyCloseBtn" type="button" aria-label="Đóng">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
+      </header>
+
+      <div class="story-canvas" id="storyCardContainer">
+        <!-- renderStoryCard() -->
       </div>
+
+      <button class="btn btn--primary btn--block" id="storySaveBtn" type="button">Chụp ảnh để đăng Story</button>
     </div>
   </div>
 
-  <!-- Mobile Bottom Navigation Bar (Ergonomic App Navigation) -->
-  <nav class="bottom-nav" id="bottomNav">
-    <button class="nav-item active" data-tab="paneHandbook">
-      <span class="nav-icon">📖</span>
-      <span class="nav-label">Tra Cứu</span>
-    </button>
-    <button class="nav-item reels-nav-btn" data-tab="paneReels">
-      <span class="nav-icon flame-pulsing">⚡</span>
-      <span class="nav-label">Math Reels</span>
-      <span class="nav-hot-pill">HOT</span>
-    </button>
-    <button class="nav-item" data-tab="paneFlashcard">
-      <span class="nav-icon">🎴</span>
-      <span class="nav-label">Flashcard</span>
-    </button>
-    <button class="nav-item" data-tab="paneQuiz">
-      <span class="nav-icon">🧠</span>
-      <span class="nav-label">Luyện Nhớ</span>
-    </button>
-    <button class="nav-item" data-tab="paneDeploy">
-      <span class="nav-icon">🚀</span>
-      <span class="nav-label">Up Link</span>
-    </button>
-  </nav>
+  <!-- Toast -->
+  <div class="toast" id="toastBox" role="status" aria-live="polite"></div>
 
-  <!-- Toast Notification Container -->
-  <div class="toast" id="toastBox">Thông báo!</div>
+  <noscript>
+    <p style="padding:24px;color:#e2e8f0">Ứng dụng cần JavaScript để hiển thị công thức. Hãy bật JavaScript rồi tải lại trang.</p>
+  </noscript>
 
-  <!-- Scripts -->
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
