@@ -2,7 +2,7 @@
 
 Ứng dụng web học tập dạng **TikTok Math Reels**: vuốt từng công thức như xem reel, kết hợp sổ tay tra cứu, flashcard 3D và trắc nghiệm phản xạ.
 
-Thiết kế **Clean Dark Mode / Glassmorphism tối giản**, tối ưu cho mobile (iOS Safari có tai thỏ & home indicator), chạy offline, không cần build, tương thích 100% với **GitHub Pages**.
+Thiết kế theo chất liệu **"Vở ô ly & bút đỏ"**: nền là tờ giấy vở có lưới ô ly, lằn đỏ lề vở, mực bút bi, bút đỏ của giáo viên và bút dạ quang. Tối ưu cho mobile (iOS Safari có tai thỏ & home indicator), chạy offline, không cần build, tương thích 100% với **GitHub Pages**.
 
 ---
 
@@ -10,7 +10,7 @@ Thiết kế **Clean Dark Mode / Glassmorphism tối giản**, tối ưu cho mob
 
 ### 1. 🎬 Trang chủ — Math Reels (mặc định khi mở app)
 - Mỗi công thức là **một card toàn màn hình**, cuộn dạng snap (`scroll-snap-type: y mandatory`) — vuốt lên/xuống mượt như TikTok/Reels.
-- **Thanh tương tác dọc bên phải** (glassmorphism): Lưu · Bình luận · Chia sẻ story · Nhạc nền.
+- **Thanh tương tác dọc bên phải** (nét chì, không kính mờ): Lưu · Bình luận · Chia sẻ story · Nhạc nền.
 - **Double-tap để lưu** công thức, kèm hiệu ứng tim bay.
 - Card được trộn nhiều dạng:
   - **Công thức** — badge chuyên đề, công thức KaTeX căn giữa, hộp "💡 Mẹo nhớ nhanh".
@@ -48,13 +48,14 @@ Thiết kế **Clean Dark Mode / Glassmorphism tối giản**, tối ưu cho mob
 
 | Thành phần | Giá trị |
 |---|---|
-| Nền chính | `#0B0F19` (Deep Slate) — không dùng đen tuyền |
-| Bề mặt | `#0F172A` + lớp trắng mờ 4–8% |
-| Nhấn chính | `#38BDF8` (Cyan) → `#6366F1` (Indigo) |
-| Đúng | `#34D399` (Emerald) |
-| Bẫy / cảnh báo | `#F43F5E` (Crimson) |
-| Chữ | `#E9EEF7` / phụ `#94A3B8` |
-| Bo góc | 10 → 26px, pill 999px |
+| Nền vở | `#0E141F` (học đêm) · `#EFF3F8` (giấy trắng-xanh) — cố ý **không** dùng kem `#F4F1EA` |
+| Kết cấu | Lưới ô ly 20px + lằn đỏ lề vở ở 44px (nội dung bắt đầu 52px) |
+| Nhấn chính | `#7FB3FF` (bút bi xanh) · `#1D4ED8` (mực bút bi) |
+| Mực xanh lá — "đúng" | `#3DBE7C` · `#16803C` |
+| Bút đỏ — "bẫy" & "đã lưu" | `#F0574F` · `#C42B22` |
+| Dạ quang — "Mẹo nhớ nhanh" | `#F5D547` (vệt highlight trên đúng một nhãn) |
+| Chữ | `#E9EEF7` / phụ `#A6B3C6` · mực `#10182B` / phụ `#4A5568` |
+| Bo góc | 6 → 18px (giấy vở không bo tròn); pill 999px chỉ còn ở chip nhỏ |
 | Font | Be Vietnam Pro (đủ dấu tiếng Việt) · JetBrains Mono (số & công thức) |
 
 **Kỹ thuật quan trọng:**

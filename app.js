@@ -1163,10 +1163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <span class="badge badge--tier badge--tier-warn">Bẫy thường gặp</span>
       </div>
 
-      <div class="reel-heading">
-        <span class="kicker">${escHtml(item.chapterName)}</span>
-        <h2 class="reel-title">${item.title}</h2>
-      </div>
+      <h2 class="reel-title">${item.title}</h2>
 
       <div class="formula-box"><div class="math-render">$$${item.latex}$$</div></div>
 
@@ -1190,10 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <span class="badge badge--tier badge--tier-accent">Mẹo máy tính</span>
       </div>
 
-      <div class="reel-heading">
-        <span class="kicker">${escHtml(item.chapterName)}</span>
-        <h2 class="reel-title">${item.title}</h2>
-      </div>
+      <h2 class="reel-title">${item.title}</h2>
 
       <div class="formula-box"><div class="math-render">$$${item.latex}$$</div></div>
 
