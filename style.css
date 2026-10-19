@@ -1149,8 +1149,16 @@ kbd {
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
+  /* Nội dung ngắn hơn khung thì căn giữa dọc cho cân; khi tràn vẫn cuộn từ đầu.
+     `safe center` không được hỗ trợ thì rơi về flex-start (dòng trên), nên an toàn. */
+  justify-content: flex-start;
+  justify-content: safe center;
   gap: 11px;
-  padding: 16px 76px calc(20px + var(--safe-bottom)) 16px;
+  /* Lề TRÁI = PHẢI = 52px:
+     - Thanh icon rộng 44px + cách mép phải 4px = 48px => 52px là đủ chừa chỗ,
+       chữ không bao giờ chui xuống dưới thanh icon.
+     - Trước đây lề 16/76 làm TÂM nội dung lệch trái 30px so với tâm card. */
+  padding: 16px 52px calc(20px + var(--safe-bottom));
   scrollbar-width: none;
 }
 .reel-scroll::-webkit-scrollbar { display: none; }
@@ -1216,7 +1224,10 @@ body[data-theme="light"] .reel-card .formula-box {
 /* Right floating action rail */
 .reel-rail {
   position: absolute;
-  right: 9px;
+  right: 4px;
+  /* Khoá bề rộng đúng bằng nút tròn: nhờ vậy lề phải của .reel-scroll (52px)
+     tính được chính xác và nội dung không bao giờ bị thanh icon đè lên. */
+  width: 44px;
   bottom: calc(18px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
@@ -1246,10 +1257,15 @@ body[data-theme="light"] .reel-card .formula-box {
 .rail-btn__circle svg { width: 21px; height: 21px; }
 .rail-btn:active .rail-btn__circle { transform: scale(0.9); }
 .rail-count {
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-weight: 700;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
+  /* Nhãn dài nhất là "Chia sẻ": giữ trong đúng 44px để không tràn ra mép card */
+  max-width: 44px;
+  text-align: center;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 .rail-btn.is-active .rail-btn__circle {
   color: var(--warn);
@@ -1814,7 +1830,8 @@ code {
 
 @media (max-width: 380px) {
   .reel-title { font-size: 1.06rem; }
-  .reel-scroll { padding-right: 68px; }
+  /* Giữ lề trái = phải để nội dung vẫn căn giữa trên máy hẹp */
+  .reel-scroll { padding: 14px 50px calc(18px + var(--safe-bottom)); }
   .fc-controls { grid-template-columns: 44px 1fr 1fr 44px; }
   .progress-hero__value { font-size: 1.8rem; }
 }
