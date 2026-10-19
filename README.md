@@ -11,6 +11,7 @@ Thiết kế theo chất liệu **"Vở ô ly & bút đỏ"**: nền là tờ gi
 ### 1. 🎬 Trang chủ — Math Reels (mặc định khi mở app)
 - Mỗi công thức là **một card toàn màn hình**, cuộn dạng snap (`scroll-snap-type: y mandatory`) — vuốt lên/xuống mượt như TikTok/Reels.
 - **Thanh tương tác dọc bên phải** (nét chì, không kính mờ): Lưu · Bình luận · Chia sẻ story · Nhạc nền.
+- **Nhạc nền 5 bài** — Lofi ôn bài · Mưa qua cửa sổ · Gõ nhịp bàn học · Đêm khuya · Chuông gió. Sinh trực tiếp bằng **Web Audio**, không cần file mp3 nên vẫn offline và không vướng bản quyền; bấm nút nhạc để mở sheet chọn bài, có thanh âm lượng và ghi nhớ lựa chọn.
 - **Double-tap để lưu** công thức, kèm hiệu ứng tim bay.
 - Card được trộn nhiều dạng:
   - **Công thức** — badge chuyên đề, công thức KaTeX căn giữa, hộp "💡 Mẹo nhớ nhanh".

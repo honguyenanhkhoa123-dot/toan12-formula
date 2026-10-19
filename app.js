@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     STREAK: 'toan12_quiz_streak',
     BEST: 'toan12_best_streak',
     REELS_SEEN: 'toan12_reels_tip_seen',
+    MUSIC: 'toan12_music',
     commentsFor: (id) => `reels_comments_${id}`
   };
 
@@ -35,6 +36,99 @@ document.addEventListener('DOMContentLoaded', () => {
     music:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5V5.2l10-1.7v12"/><circle cx="6.3" cy="17.8" r="2.7"/><circle cx="16.3" cy="15.8" r="2.7"/></svg>'
   };
+
+  /* 5 bài nhạc nền — sinh bằng Web Audio, KHÔNG cần file mp3 nên vẫn offline,
+     không bản quyền, dung lượng tăng 0 KB. Mỗi bài khác nhau thật về hợp âm,
+     nhịp (step), âm sắc (osc) và độ lọc (cutoff).
+     `short` là nhãn hiện dưới nút nhạc — phải ngắn để vừa thanh 44px. */
+  const MUSIC_TRACKS = [
+    {
+      id: 'lofi',
+      name: 'Lofi ôn bài',
+      short: 'Lofi',
+      note: 'Hợp âm ấm, chậm rãi',
+      icon: '🎧',
+      mode: 'chord',
+      step: 3000,
+      gain: 0.06,
+      osc: 'triangle',
+      cutoff: 700,
+      voices: [
+        [349.23, 440.0, 523.25, 659.25],   // F
+        [329.63, 392.0, 493.88, 587.33],   // Em
+        [293.66, 349.23, 440.0, 523.25],   // Dm
+        [261.63, 329.63, 392.0, 493.88]    // C
+      ]
+    },
+    {
+      id: 'rain',
+      name: 'Mưa qua cửa sổ',
+      short: 'Mưa',
+      note: 'Pad mềm + tiếng mưa',
+      icon: '🌧',
+      mode: 'chord',
+      step: 4200,
+      gain: 0.07,
+      osc: 'sine',
+      cutoff: 480,
+      noise: { gain: 0.05, low: 1800, high: 320 },
+      voices: [
+        [293.66, 349.23, 440.0, 587.33],   // Dm
+        [233.08, 293.66, 349.23, 466.16],  // Bb
+        [174.61, 261.63, 349.23, 440.0],   // F
+        [196.0, 261.63, 329.63, 392.0]     // C
+      ]
+    },
+    {
+      id: 'tap',
+      name: 'Gõ nhịp bàn học',
+      short: 'Nhịp',
+      note: 'Nốt rải đều như bút gõ nhịp',
+      icon: '🖊',
+      mode: 'arp',
+      step: 420,
+      gain: 0.032,
+      osc: 'triangle',
+      cutoff: 1600,
+      release: 0.5,
+      pattern: [440.0, 523.25, 587.33, 523.25, 440.0, 392.0, 349.23, 392.0],
+      bass: [87.31, 130.81]
+    },
+    {
+      id: 'night',
+      name: 'Đêm khuya',
+      short: 'Đêm',
+      note: 'Pad rất chậm, êm tai',
+      icon: '🌙',
+      mode: 'chord',
+      step: 6000,
+      gain: 0.06,
+      osc: 'sine',
+      cutoff: 380,
+      release: 5.6,
+      voices: [
+        [220.0, 261.63, 329.63, 392.0],    // Am
+        [174.61, 220.0, 261.63, 349.23],   // F
+        [130.81, 196.0, 261.63, 329.63],   // C
+        [196.0, 246.94, 293.66, 392.0]     // G
+      ]
+    },
+    {
+      id: 'chime',
+      name: 'Chuông gió',
+      short: 'Chuông',
+      note: 'Nốt cao ngân dài, thưa',
+      icon: '🎐',
+      mode: 'chime',
+      step: 900,
+      gain: 0.045,
+      osc: 'sine',
+      cutoff: 2600,
+      release: 2.6,
+      chance: 0.42,
+      pattern: [523.25, 587.33, 698.46, 783.99, 880.0, 1046.5]
+    }
+  ];
 
   const escHtml = (value) =>
     String(value == null ? '' : value).replace(/[&<>"']/g, (c) => ({
@@ -101,6 +195,26 @@ document.addEventListener('DOMContentLoaded', () => {
     quizAnswered: false,
     streak: parseInt(localStorage.getItem(KEYS.STREAK) || '0', 10) || 0,
     bestStreak: parseInt(localStorage.getItem(KEYS.BEST) || '0', 10) || 0
+  };
+
+  /* Nhạc nền — chỉ nhớ bài + âm lượng, KHÔNG tự phát khi mở trang
+     (trình duyệt chặn autoplay khi chưa có thao tác của người dùng). */
+  const savedMusic = readJSON(KEYS.MUSIC, {}) || {};
+  const musicState = {
+    on: false,
+    trackId: MUSIC_TRACKS.some((t) => t.id === savedMusic.trackId) ? savedMusic.trackId : MUSIC_TRACKS[0].id,
+    volume: typeof savedMusic.volume === 'number' ? Math.min(1, Math.max(0, savedMusic.volume)) : 0.6,
+    timer: null,
+    master: null,
+    noise: null,
+    tick: 0,
+    resumeAfterHidden: false
+  };
+  const musicTrack = () => MUSIC_TRACKS.find((t) => t.id === musicState.trackId) || MUSIC_TRACKS[0];
+  const saveMusic = () => {
+    try {
+      localStorage.setItem(KEYS.MUSIC, JSON.stringify({ trackId: musicState.trackId, volume: musicState.volume }));
+    } catch (err) { /* chế độ riêng tư: bỏ qua */ }
   };
 
   const $ = (id) => document.getElementById(id);
@@ -945,9 +1059,6 @@ document.addEventListener('DOMContentLoaded', () => {
     ready: false,
     chapter: 'all',
     deck: [],
-    lofiOn: false,
-    lofiInterval: null,
-    lofiNodes: null,
     reflexTimers: Object.create(null),
     activeFormula: null,
     activeTitle: ''
@@ -1124,9 +1235,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="rail-count">Chia sẻ</span>
         </button>
 
-        <button class="rail-btn js-music${reelsState.lofiOn ? ' is-playing' : ''}" type="button" aria-label="Bật tắt nhạc nền">
+        <button class="rail-btn js-music${musicState.on ? ' is-playing' : ''}" type="button" aria-label="Chọn nhạc nền">
           <span class="rail-btn__circle">${ICON.music}</span>
-          <span class="rail-count">Nhạc</span>
+          <span class="rail-count">${musicState.on ? musicTrack().short : 'Nhạc'}</span>
         </button>
       </div>`;
   }
@@ -1403,7 +1514,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const shareBtn = e.target.closest('.js-share');
       if (shareBtn) { openStory(shareBtn.dataset.id); return; }
 
-      if (e.target.closest('.js-music')) { toggleLofi(); return; }
+      if (e.target.closest('.js-music')) { openMusic(); return; }
 
       // Double-tap để lưu (bỏ qua khi bấm vào phần tử tương tác)
       if (e.target.closest('button, a, input, select')) return;
@@ -1440,76 +1551,269 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* -------------------------------- Nhạc nền ----------------------------- */
-  function toggleLofi() {
-    reelsState.lofiOn = !reelsState.lofiOn;
-    reelsFeed.querySelectorAll('.js-music').forEach((btn) => btn.classList.toggle('is-playing', reelsState.lofiOn));
-    if (reelsState.lofiOn) { startLofi(); showToast('Đang phát nhạc nền'); }
-    else { stopLofi(); showToast('Đã tắt nhạc nền'); }
+  /* -------------------------------- Nhạc nền -----------------------------
+     Engine sinh nhạc bằng Web Audio. Chọn bài trong sheet "Nhạc nền",
+     hoặc từ Cài đặt ở tab Tôi. */
+  const musicDrawer = $('musicDrawer');
+  const musicList = $('musicList');
+  const musicToggleBtn = $('musicToggleBtn');
+  const musicVolumeInput = $('musicVolume');
+  const musicVolumeValue = $('musicVolumeValue');
+  const musicSettingDesc = $('musicSettingDesc');
+  const musicCloseBtn = $('musicCloseBtn');
+  const musicBackdrop = $('musicBackdrop');
+  const openMusicBtn = $('openMusicBtn');
+
+  /** Một nốt: sóng -> lowpass -> vuốt lên rồi tắt dần. */
+  function musicNote(ctx, dest, freq, opts) {
+    const when = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    filter.type = 'lowpass';
+    filter.frequency.value = opts.cutoff;
+    osc.type = opts.osc;
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.linearRampToValueAtTime(opts.gain, when + opts.attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + opts.attack + opts.release);
+
+    osc.connect(filter).connect(gain).connect(dest);
+    osc.start(when);
+    osc.stop(when + opts.attack + opts.release + 0.06);
   }
 
-  function startLofi() {
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
+  /** Lớp nền "mưa": nhiễu trắng lọc qua highpass + lowpass. */
+  function startNoiseBed(ctx, dest, spec) {
+    const len = Math.floor(ctx.sampleRate * 2);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i += 1) data[i] = Math.random() * 2 - 1;
 
-      const chords = [
-        [349.23, 440.0, 523.25, 659.25],
-        [329.63, 392.0, 493.88, 587.33],
-        [293.66, 349.23, 440.0, 523.25],
-        [261.63, 329.63, 392.0, 493.88]
-      ];
-      let index = 0;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
 
-      const master = ctx.createGain();
-      master.gain.value = 0.5;
-      master.connect(ctx.destination);
-      reelsState.lofiNodes = master;
+    const high = ctx.createBiquadFilter();
+    high.type = 'highpass';
+    high.frequency.value = spec.high;
 
-      const playChord = () => {
-        if (!reelsState.lofiOn) return;
-        const notes = chords[index];
-        index = (index + 1) % chords.length;
-        const now = ctx.currentTime;
+    const low = ctx.createBiquadFilter();
+    low.type = 'lowpass';
+    low.frequency.value = spec.low;
 
-        notes.forEach((freq) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    gain.gain.value = spec.gain;
 
-          filter.type = 'lowpass';
-          filter.frequency.value = 700;
+    src.connect(high).connect(low).connect(gain).connect(dest);
+    src.start();
+    return src;
+  }
 
-          osc.type = 'triangle';
-          osc.frequency.value = freq;
+  /** Phả một "nhịp" của bài đang chọn. */
+  function musicStep(ctx, dest) {
+    const t = musicTrack();
+    const attack = t.attack == null ? 0.35 : t.attack;
+    const release = t.release == null ? (t.step / 1000) * 0.95 : t.release;
+    const base = { cutoff: t.cutoff, osc: t.osc, gain: t.gain, attack, release };
 
-          gain.gain.setValueAtTime(0.0005, now);
-          gain.gain.linearRampToValueAtTime(0.035, now + 0.35);
-          gain.gain.exponentialRampToValueAtTime(0.0005, now + 2.8);
+    if (t.mode === 'chord') {
+      const notes = t.voices[musicState.tick % t.voices.length];
+      musicState.tick += 1;
+      notes.forEach((freq) => musicNote(ctx, dest, freq, base));
+      return;
+    }
 
-          osc.connect(filter).connect(gain).connect(master);
-          osc.start(now);
-          osc.stop(now + 2.9);
+    if (t.mode === 'arp') {
+      const i = musicState.tick;
+      musicState.tick += 1;
+      musicNote(ctx, dest, t.pattern[i % t.pattern.length], base);
+      if (i % t.pattern.length === 0) {
+        musicNote(ctx, dest, t.bass[(i / t.pattern.length) % t.bass.length], {
+          cutoff: 320, osc: t.osc, gain: t.gain * 1.7, attack: 0.05, release: 2.4
         });
-      };
+      }
+      return;
+    }
 
-      playChord();
-      reelsState.lofiInterval = setInterval(playChord, 3000);
-    } catch (err) {
-      reelsState.lofiOn = false;
+    // chime: thưa và ngẫu nhiên — có nhịp không có tiếng nào
+    musicState.tick += 1;
+    if (Math.random() > t.chance) return;
+    musicNote(ctx, dest, t.pattern[Math.floor(Math.random() * t.pattern.length)], {
+      cutoff: t.cutoff, osc: t.osc, gain: t.gain, attack: 0.02, release
+    });
+  }
+
+  /** Dọn phiên đang phát: ngắt timer, lớp mưa và master (có vuốt tắt 0.25s). */
+  function killMusicNodes() {
+    if (musicState.timer) {
+      clearInterval(musicState.timer);
+      musicState.timer = null;
+    }
+    if (musicState.noise) {
+      const bed = musicState.noise;
+      musicState.noise = null;
+      try { bed.stop(); } catch (err) { /* noop */ }
+      try { bed.disconnect(); } catch (err) { /* noop */ }
+    }
+    if (musicState.master) {
+      const node = musicState.master;
+      musicState.master = null;
+      try {
+        const now = node.context.currentTime;
+        node.gain.cancelScheduledValues(now);
+        node.gain.setValueAtTime(node.gain.value, now);
+        node.gain.linearRampToValueAtTime(0.0001, now + 0.25);
+      } catch (err) { /* noop */ }
+      setTimeout(() => { try { node.disconnect(); } catch (err) { /* noop */ } }, 500);
     }
   }
 
-  function stopLofi() {
-    if (reelsState.lofiInterval) {
-      clearInterval(reelsState.lofiInterval);
-      reelsState.lofiInterval = null;
+  function startMusic() {
+    const ctx = getAudioContext();
+    if (!ctx) { musicState.on = false; syncMusicUi(); return; }
+
+    // Đổi bài giữa chừng: dọn phiên cũ trước, nếu không hai bài sẽ chồng tiếng.
+    killMusicNodes();
+
+    const t = musicTrack();
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, ctx.currentTime);
+    master.gain.linearRampToValueAtTime(musicState.volume, ctx.currentTime + 1.2);
+    master.connect(ctx.destination);
+    musicState.master = master;
+    musicState.tick = 0;
+    if (t.noise) musicState.noise = startNoiseBed(ctx, master, t.noise);
+
+    musicState.on = true;
+    musicStep(ctx, master);
+    musicState.timer = setInterval(() => {
+      if (!musicState.on) return;
+      musicStep(ctx, master);
+    }, t.step);
+
+    syncMusicUi();
+  }
+
+  function stopMusic() {
+    musicState.on = false;
+    killMusicNodes();
+    syncMusicUi();
+  }
+
+  function toggleMusic() {
+    if (musicState.on) {
+      stopMusic();
+      showToast('Đã tạm dừng nhạc nền');
+      return;
     }
-    if (reelsState.lofiNodes) {
-      try { reelsState.lofiNodes.disconnect(); } catch (err) { /* noop */ }
-      reelsState.lofiNodes = null;
+    startMusic();
+    if (musicState.on) showToast(`Đang phát: ${musicTrack().name}`);
+  }
+
+  function selectMusic(id) {
+    if (!MUSIC_TRACKS.some((t) => t.id === id)) return;
+    playSound('click');
+    musicState.trackId = id;
+    saveMusic();
+    startMusic();
+    syncMusicUi();
+  }
+
+  function setMusicVolume(value) {
+    musicState.volume = Math.min(1, Math.max(0, value));
+    saveMusic();
+    if (musicState.master) {
+      try {
+        musicState.master.gain.setTargetAtTime(musicState.volume, musicState.master.context.currentTime, 0.08);
+      } catch (err) { /* noop */ }
+    }
+    syncMusicUi();
+  }
+
+  function renderMusicList() {
+    if (!musicList) return;
+    musicList.innerHTML = MUSIC_TRACKS.map((t) => {
+      const active = t.id === musicState.trackId;
+      const playing = active && musicState.on;
+      return `
+        <button class="music-item${active ? ' is-active' : ''}" type="button" data-track="${t.id}"
+                aria-pressed="${playing}">
+          <span class="music-item__icon" aria-hidden="true">${t.icon}</span>
+          <span class="music-item__text">
+            <span class="music-item__name">${escHtml(t.name)}</span>
+            <span class="music-item__note">${escHtml(t.note)}</span>
+          </span>
+          <span class="music-item__wave${playing ? ' is-on' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>
+        </button>`;
+    }).join('');
+  }
+
+  /** Đồng bộ mọi nơi hiển thị trạng thái nhạc (không render lại danh sách,
+      để kéo thanh âm lượng không bị mất tay). */
+  function syncMusicUi() {
+    const t = musicTrack();
+
+    document.querySelectorAll('.js-music').forEach((btn) => {
+      btn.classList.toggle('is-playing', musicState.on);
+      btn.setAttribute('aria-label', musicState.on
+        ? `Nhạc nền đang phát: ${t.name}. Bấm để đổi bài`
+        : 'Chọn nhạc nền');
+      const label = btn.querySelector('.rail-count');
+      if (label) label.textContent = musicState.on ? t.short : 'Nhạc';
+    });
+
+    if (musicList) {
+      musicList.querySelectorAll('.music-item').forEach((item) => {
+        const active = item.dataset.track === musicState.trackId;
+        const playing = active && musicState.on;
+        item.classList.toggle('is-active', active);
+        item.setAttribute('aria-pressed', String(playing));
+        const wave = item.querySelector('.music-item__wave');
+        if (wave) wave.classList.toggle('is-on', playing);
+      });
+    }
+
+    if (musicToggleBtn) musicToggleBtn.textContent = musicState.on ? 'Tạm dừng nhạc' : 'Phát nhạc';
+    if (musicVolumeValue) musicVolumeValue.textContent = `${Math.round(musicState.volume * 100)}%`;
+    if (musicSettingDesc) {
+      musicSettingDesc.textContent = musicState.on
+        ? `Đang phát: ${t.name}`
+        : `Đang chọn: ${t.name} · đang tắt`;
     }
   }
+
+  function openMusic() {
+    playSound('click');
+    renderMusicList();
+    syncMusicUi();
+    openOverlay(musicDrawer);
+  }
+
+  if (musicVolumeInput) musicVolumeInput.value = String(Math.round(musicState.volume * 100));
+  if (musicList) {
+    musicList.addEventListener('click', (e) => {
+      const item = e.target.closest('.music-item');
+      if (item) selectMusic(item.dataset.track);
+    });
+  }
+  if (musicToggleBtn) musicToggleBtn.addEventListener('click', () => { playSound('click'); toggleMusic(); });
+  if (musicVolumeInput) musicVolumeInput.addEventListener('input', (e) => setMusicVolume(Number(e.target.value) / 100));
+  if (musicCloseBtn) musicCloseBtn.addEventListener('click', () => { playSound('click'); closeOverlay(musicDrawer); });
+  if (musicBackdrop) musicBackdrop.addEventListener('click', () => closeOverlay(musicDrawer));
+  if (openMusicBtn) openMusicBtn.addEventListener('click', openMusic);
+
+  // Tab bị ẩn thì ngắt nhạc cho khỏi tốn pin; quay lại thì phát tiếp.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (musicState.on) { musicState.resumeAfterHidden = true; stopMusic(); }
+    } else if (musicState.resumeAfterHidden) {
+      musicState.resumeAfterHidden = false;
+      startMusic();
+    }
+  });
 
   /* ==========================================================================
      13. OVERLAY (SHEET / MODAL)
@@ -1764,4 +2068,5 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHandbook();
   updateProgress();
   switchTab('paneReels', { silent: true });
+  syncMusicUi();
 });
